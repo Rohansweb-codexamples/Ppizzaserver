@@ -35,7 +35,6 @@
         .game-obj { position: absolute; font-size: 2rem; user-select: none; }
         #game-player { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 3rem; }
         
-        .barcode-line { display: inline-block; height: 50px; background: black; margin: 0 1px; }
         .auth-toggle.active { border-bottom: 3px solid var(--primary); color: var(--primary); }
     </style>
 </head>
@@ -78,7 +77,7 @@
         <div class="border-t pt-4 mt-4">
             <div class="flex justify-between font-bold text-lg mb-4">
                 <span>Total:</span>
-                <span id="cart-total">$0.00</span>
+                <span id="cart-total">£0.00</span>
             </div>
             <button onclick="processOrder()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700">Checkout</button>
         </div>
@@ -183,7 +182,6 @@
     </main>
 
     <script>
-        // Updated to use your Render URL
         const API_URL = "https://ppizzaserver.onrender.com";
         
         let currentUser = JSON.parse(localStorage.getItem('pizza_user')) || null;
@@ -263,6 +261,7 @@
             if (gameActive) return;
             gameActive = true; score = 0;
             document.getElementById('game-msg').classList.add('hidden');
+            document.getElementById('score-display').innerText = "0 / 10";
             gameLoop();
         }
 
@@ -304,14 +303,20 @@
             };
 
             try {
-                await fetch(`${API_URL}/rewards`, {
+                const response = await fetch(`${API_URL}/rewards`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(reward)
                 });
-            } catch (e) { console.error("Save failed", e); }
+                if (response.ok) {
+                    console.log("Reward saved successfully");
+                }
+            } catch (e) { 
+                console.error("Save failed", e); 
+                alert("Reward won but couldn't save to server. Check connection!");
+            }
 
-            document.getElementById('game-msg').innerHTML = `<p class="font-brand text-2xl text-yellow-400">WINNER!</p>`;
+            document.getElementById('game-msg').innerHTML = `<p class="font-brand text-2xl text-yellow-400">WINNER!</p><p class="text-white text-xs mt-2">Reward Saved to Wallet</p>`;
             document.getElementById('game-msg').classList.remove('hidden');
             updateWalletUI();
         }
@@ -327,7 +332,7 @@
                         <p class="font-mono text-xl">${r.id}</p>
                         <p class="text-xs text-yellow-400 font-bold">${r.status.toUpperCase()}</p>
                     </div>
-                `).join('');
+                `).join('') || '<p class="text-gray-500">No rewards earned yet.</p>';
             } catch (e) { console.error("Wallet load failed", e); }
         }
 
@@ -359,11 +364,40 @@
         }
 
         function toggleCart() { document.getElementById('cart-sidebar').classList.toggle('translate-x-full'); }
-        function addToCart(id) { cart.push(pizzas.find(x => x.id === id)); updateCart(); }
+        
+        function addToCart(id) { 
+            cart.push(pizzas.find(x => x.id === id)); 
+            updateCart(); 
+        }
+
         function updateCart() {
             document.getElementById('cart-count').innerText = cart.length;
-            document.getElementById('cart-items').innerHTML = cart.map(i => `<div class="p-3 bg-gray-100 rounded-lg">${i.name}</div>`).join('');
-            document.getElementById('cart-total').innerText = `$${cart.reduce((a,b) => a+b.price, 0)}`;
+            document.getElementById('cart-items').innerHTML = cart.map(i => `<div class="p-3 bg-gray-100 rounded-lg flex justify-between"><span>${i.name}</span><span>£${i.price}</span></div>`).join('');
+            document.getElementById('cart-total').innerText = `£${cart.reduce((a,b) => a+b.price, 0)}.00`;
+        }
+
+        // Logic for Checkout Button
+        async function processOrder() {
+            if (cart.length === 0) {
+                alert("Your cart is empty!");
+                return;
+            }
+            if (!currentUser) {
+                alert("Please log in to complete your order.");
+                showPage('auth');
+                toggleCart();
+                return;
+            }
+
+            const total = cart.reduce((a,b) => a+b.price, 0);
+            
+            // In a real app, you'd send this to /orders on your server
+            alert(`Thank you for your order, ${currentUser.email}!\nTotal: £${total}.00\nYour pizza is being prepared.`);
+            
+            // Clear cart
+            cart = [];
+            updateCart();
+            toggleCart();
         }
 
         document.getElementById('game-container').addEventListener('mousemove', (e) => {
@@ -378,7 +412,7 @@
                     <img src="${p.img}" class="w-full h-48 object-cover rounded-2xl mb-4">
                     <h3 class="font-bold text-xl">${p.name}</h3>
                     <p class="text-gray-500 mb-6">${p.desc}</p>
-                    <button onclick="addToCart(${p.id})" class="w-full py-3 bg-black text-white rounded-xl">Add $${p.price}</button>
+                    <button onclick="addToCart(${p.id})" class="w-full py-3 bg-black text-white rounded-xl hover:bg-red-600 transition">Add £${p.price}</button>
                 </div>
             `).join('');
         };
