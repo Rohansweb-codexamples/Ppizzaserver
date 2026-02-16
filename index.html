@@ -79,7 +79,7 @@
                 <span>Total:</span>
                 <span id="cart-total">£0.00</span>
             </div>
-            <button onclick="processOrder()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700">Checkout</button>
+            <button id="checkout-btn" onclick="processOrder()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 disabled:opacity-50">Checkout</button>
         </div>
     </div>
 
@@ -163,8 +163,16 @@
     <!-- PAGE: ADMIN -->
     <main id="page-admin" class="page bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 py-12">
-            <h2 class="text-4xl font-brand text-dark mb-8">Admin Console</h2>
-            <div class="bg-white rounded-3xl shadow-sm border overflow-hidden">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-4xl font-brand text-dark">Admin Console</h2>
+                <div class="flex gap-2">
+                    <button onclick="setAdminTab('rewards')" id="tab-rewards" class="px-6 py-2 bg-red-600 text-white rounded-full font-bold">Rewards</button>
+                    <button onclick="setAdminTab('orders')" id="tab-orders" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-full font-bold">Orders</button>
+                </div>
+            </div>
+
+            <!-- Rewards Table -->
+            <div id="admin-rewards-section" class="bg-white rounded-3xl shadow-sm border overflow-hidden">
                 <table class="w-full text-left">
                     <thead class="bg-gray-50 border-b">
                         <tr>
@@ -178,6 +186,21 @@
                     <tbody id="admin-table-body"></tbody>
                 </table>
             </div>
+
+            <!-- Orders Table -->
+            <div id="admin-orders-section" class="hidden bg-white rounded-3xl shadow-sm border overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 border-b">
+                        <tr>
+                            <th class="p-6 font-bold">User</th>
+                            <th class="p-6 font-bold">Items</th>
+                            <th class="p-6 font-bold">Total</th>
+                            <th class="p-6 font-bold">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-orders-body"></tbody>
+                </table>
+            </div>
         </div>
     </main>
 
@@ -189,6 +212,7 @@
         let cart = [];
         let score = 0;
         let gameActive = false;
+        let currentAdminTab = 'rewards';
 
         const pizzas = [
             { id: 1, name: "Pepperoni American", price: 16, desc: "Classic bold pepperoni.", img: "https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400" },
@@ -303,18 +327,12 @@
             };
 
             try {
-                const response = await fetch(`${API_URL}/rewards`, {
+                await fetch(`${API_URL}/rewards`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(reward)
                 });
-                if (response.ok) {
-                    console.log("Reward saved successfully");
-                }
-            } catch (e) { 
-                console.error("Save failed", e); 
-                alert("Reward won but couldn't save to server. Check connection!");
-            }
+            } catch (e) { console.error("Save failed", e); }
 
             document.getElementById('game-msg').innerHTML = `<p class="font-brand text-2xl text-yellow-400">WINNER!</p><p class="text-white text-xs mt-2">Reward Saved to Wallet</p>`;
             document.getElementById('game-msg').classList.remove('hidden');
@@ -336,22 +354,47 @@
             } catch (e) { console.error("Wallet load failed", e); }
         }
 
+        function setAdminTab(tab) {
+            currentAdminTab = tab;
+            document.getElementById('tab-rewards').className = tab === 'rewards' ? 'px-6 py-2 bg-red-600 text-white rounded-full font-bold' : 'px-6 py-2 bg-gray-200 text-gray-700 rounded-full font-bold';
+            document.getElementById('tab-orders').className = tab === 'orders' ? 'px-6 py-2 bg-red-600 text-white rounded-full font-bold' : 'px-6 py-2 bg-gray-200 text-gray-700 rounded-full font-bold';
+            
+            document.getElementById('admin-rewards-section').classList.toggle('hidden', tab !== 'rewards');
+            document.getElementById('admin-orders-section').classList.toggle('hidden', tab !== 'orders');
+            loadAdminData();
+        }
+
         async function loadAdminData() {
-            try {
-                const res = await fetch(`${API_URL}/admin/rewards`);
-                const rewards = await res.json();
-                document.getElementById('admin-table-body').innerHTML = rewards.slice().reverse().map(r => `
-                    <tr class="border-b">
-                        <td class="p-6">${r.userEmail}</td>
-                        <td class="p-6 font-mono">${r.id}</td>
-                        <td class="p-6">${r.discount}</td>
-                        <td class="p-6">${r.status}</td>
-                        <td class="p-6">
-                            ${r.status === 'pending' ? `<button onclick="redeem('${r.id}')" class="bg-black text-white px-3 py-1 rounded">Redeem</button>` : '-'}
-                        </td>
-                    </tr>
-                `).join('');
-            } catch (e) { console.error("Admin load failed", e); }
+            if(currentAdminTab === 'rewards') {
+                try {
+                    const res = await fetch(`${API_URL}/admin/rewards`);
+                    const rewards = await res.json();
+                    document.getElementById('admin-table-body').innerHTML = rewards.slice().reverse().map(r => `
+                        <tr class="border-b">
+                            <td class="p-6">${r.userEmail}</td>
+                            <td class="p-6 font-mono">${r.id}</td>
+                            <td class="p-6">${r.discount}</td>
+                            <td class="p-6">${r.status}</td>
+                            <td class="p-6">
+                                ${r.status === 'pending' ? `<button onclick="redeem('${r.id}')" class="bg-black text-white px-3 py-1 rounded">Redeem</button>` : '-'}
+                            </td>
+                        </tr>
+                    `).join('');
+                } catch (e) { console.error("Admin load failed", e); }
+            } else {
+                try {
+                    const res = await fetch(`${API_URL}/admin/orders`);
+                    const orders = await res.json();
+                    document.getElementById('admin-orders-body').innerHTML = orders.slice().reverse().map(o => `
+                        <tr class="border-b">
+                            <td class="p-6">${o.userEmail}</td>
+                            <td class="p-6 text-sm text-gray-500">${o.items.map(i => i.name).join(', ')}</td>
+                            <td class="p-6 font-bold text-red-600">£${o.total}.00</td>
+                            <td class="p-6 text-xs text-gray-400">${new Date(o.createdAt).toLocaleString()}</td>
+                        </tr>
+                    `).join('') || '<tr><td colspan="4" class="p-6 text-center text-gray-400">No orders yet</td></tr>';
+                } catch (e) { console.error("Admin orders load failed", e); }
+            }
         }
 
         async function redeem(id) {
@@ -376,12 +419,8 @@
             document.getElementById('cart-total').innerText = `£${cart.reduce((a,b) => a+b.price, 0)}.00`;
         }
 
-        // Logic for Checkout Button
         async function processOrder() {
-            if (cart.length === 0) {
-                alert("Your cart is empty!");
-                return;
-            }
+            if (cart.length === 0) return alert("Your cart is empty!");
             if (!currentUser) {
                 alert("Please log in to complete your order.");
                 showPage('auth');
@@ -389,15 +428,39 @@
                 return;
             }
 
-            const total = cart.reduce((a,b) => a+b.price, 0);
-            
-            // In a real app, you'd send this to /orders on your server
-            alert(`Thank you for your order, ${currentUser.email}!\nTotal: £${total}.00\nYour pizza is being prepared.`);
-            
-            // Clear cart
-            cart = [];
-            updateCart();
-            toggleCart();
+            const btn = document.getElementById('checkout-btn');
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+
+            const orderData = {
+                userId: currentUser.id,
+                userEmail: currentUser.email,
+                items: cart,
+                total: cart.reduce((a,b) => a+b.price, 0),
+                createdAt: new Date().toISOString()
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/orders`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderData)
+                });
+
+                if (response.ok) {
+                    alert(`Order confirmed! Your pizza is being prepared.`);
+                    cart = [];
+                    updateCart();
+                    toggleCart();
+                } else {
+                    alert("Failed to send order to server.");
+                }
+            } catch (e) {
+                alert("Connection error. Could not reach server.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Checkout";
+            }
         }
 
         document.getElementById('game-container').addEventListener('mousemove', (e) => {
