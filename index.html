@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfect Pizza | Premium Ordering & Rewards</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bungee&family=Inter:wght@300;400;600;800&display=swap');
+        
+        :root {
+            --primary: #e63946;
+            --secondary: #f1faee;
+            --accent: #ffb703;
+            --dark: #1d3557;
+        }
+
+        body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; overflow-x: hidden; }
+        .font-brand { font-family: 'Bungee', cursive; }
+        .hero-gradient {
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=2000');
+            background-size: cover; background-position: center;
+        }
+
+        .page { display: none; min-height: 100vh; padding-top: 80px; }
+        .page.active { display: block; animation: fadeIn 0.3s ease-in; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        #game-container {
+            position: relative; width: 100%; height: 400px; background: #1a202c;
+            overflow: hidden; border-radius: 1rem; cursor: crosshair;
+        }
+        .game-obj { position: absolute; font-size: 2rem; user-select: none; }
+        #game-player { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 3rem; }
+        
+        .barcode-line { display: inline-block; height: 50px; background: black; margin: 0 1px; }
+        .auth-toggle.active { border-bottom: 3px solid var(--primary); color: var(--primary); }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 bg-white/95 backdrop-blur-md shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+                <div class="flex items-center gap-3 cursor-pointer" onclick="showPage('home')">
+                    <div class="w-10 h-10 overflow-hidden rounded-full bg-red-100 flex items-center justify-center">
+                        <i class="fas fa-pizza-slice text-red-600 text-xl"></i>
+                    </div>
+                    <span class="text-xl font-brand text-red-600 tracking-tighter">PERFECT PIZZA</span>
+                </div>
+                
+                <div class="hidden md:flex space-x-6 font-semibold uppercase text-xs tracking-widest items-center">
+                    <button onclick="showPage('home')" class="hover:text-red-600 transition">Home</button>
+                    <button onclick="showPage('menu')" class="hover:text-red-600 transition">Menu</button>
+                    <button onclick="showPage('rewards')" class="hover:text-red-600 transition">Play & Win</button>
+                    
+                    <div id="auth-nav-group" class="flex items-center gap-4 border-l pl-6 ml-2"></div>
+
+                    <button onclick="toggleCart()" class="relative p-2 text-gray-700 hover:text-red-600 transition">
+                        <i class="fas fa-shopping-basket text-xl"></i>
+                        <span id="cart-count" class="absolute top-0 right-0 bg-red-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">0</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar Cart -->
+    <div id="cart-sidebar" class="fixed inset-y-0 right-0 w-80 bg-white shadow-2xl z-[60] transform translate-x-full transition-transform duration-300 p-6 flex flex-col">
+        <div class="flex justify-between items-center mb-8 border-b pb-4">
+            <h2 class="text-xl font-brand">Order</h2>
+            <button onclick="toggleCart()" class="text-gray-400"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="cart-items" class="flex-grow overflow-y-auto space-y-4"></div>
+        <div class="border-t pt-4 mt-4">
+            <div class="flex justify-between font-bold text-lg mb-4">
+                <span>Total:</span>
+                <span id="cart-total">$0.00</span>
+            </div>
+            <button onclick="processOrder()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700">Checkout</button>
+        </div>
+    </div>
+
+    <!-- PAGE: HOME -->
+    <main id="page-home" class="page active relative">
+        <section class="hero-gradient h-[85vh] flex items-center justify-center text-center text-white px-4">
+            <div class="max-w-4xl">
+                <div class="mb-8 flex flex-col items-center justify-center">
+                    <div class="w-24 h-24 bg-red-600 rounded-full flex items-center justify-center shadow-2xl animate-pulse">
+                        <i class="fas fa-pizza-slice text-5xl text-white"></i>
+                    </div>
+                </div>
+                <h1 class="text-5xl md:text-7xl font-brand mb-4">Handcrafted Perfection</h1>
+                <p class="text-xl md:text-2xl mb-10 text-gray-200">The most rewarded pizza in the city.</p>
+                <div class="flex gap-4 justify-center">
+                    <button onclick="showPage('menu')" class="bg-red-600 px-8 py-4 rounded-full font-bold text-lg hover:scale-105 transition">Order Now</button>
+                    <button onclick="showPage('rewards')" class="bg-white/10 border border-white px-8 py-4 rounded-full font-bold text-lg hover:bg-white/20 transition">Play Games</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- PAGE: AUTH -->
+    <main id="page-auth" class="page bg-gray-100 flex items-center justify-center">
+        <div class="max-w-md w-full mx-auto p-8 bg-white rounded-3xl shadow-xl mt-12">
+            <div class="flex mb-8 border-b">
+                <button onclick="toggleAuthMode('login')" id="btn-mode-login" class="auth-toggle active flex-1 py-3 font-bold uppercase text-xs tracking-widest">Login</button>
+                <button onclick="toggleAuthMode('signup')" id="btn-mode-signup" class="auth-toggle flex-1 py-3 font-bold uppercase text-xs tracking-widest">Sign Up</button>
+            </div>
+            <h2 id="auth-title" class="text-3xl font-brand text-center mb-8 text-gray-800">Welcome Back</h2>
+            <form id="auth-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Email</label>
+                    <input type="email" id="auth-email" required class="w-full p-4 bg-gray-50 border rounded-2xl outline-none" placeholder="you@example.com">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Password</label>
+                    <input type="password" id="auth-pass" required class="w-full p-4 bg-gray-50 border rounded-2xl outline-none" placeholder="••••••••">
+                </div>
+                <button type="submit" id="auth-submit-btn" class="w-full bg-red-600 text-white py-4 rounded-2xl font-bold hover:bg-red-700 shadow-lg mt-4">Sign In</button>
+            </form>
+        </div>
+    </main>
+
+    <!-- PAGE: MENU -->
+    <main id="page-menu" class="page bg-white">
+        <div class="max-w-7xl mx-auto px-4 py-12">
+            <h2 class="text-4xl font-brand text-center mb-16">The Signature Menu</h2>
+            <div id="pizza-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+        </div>
+    </main>
+
+    <!-- PAGE: REWARDS -->
+    <main id="page-rewards" class="page bg-slate-900 text-white">
+        <div class="max-w-7xl mx-auto px-4 py-12">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                <div>
+                    <h2 class="text-4xl font-brand mb-6 text-yellow-400">Rewards Zone</h2>
+                    <p class="text-gray-300 mb-8">Win the game to earn barcodes. Logged in users save rewards automatically.</p>
+                    <div id="reward-status-card" class="bg-white/10 p-8 rounded-3xl border border-white/20 text-center">
+                        <div id="reward-display"><p class="text-gray-400 italic">Catch 10 slices to win!</p></div>
+                        <div id="score-display" class="mt-6 font-brand text-3xl text-yellow-400">0 / 10</div>
+                    </div>
+                </div>
+                <div id="game-area">
+                    <div id="game-container" onclick="startGame()">
+                        <div id="game-player">🍕</div>
+                        <div id="game-msg" class="absolute inset-0 flex items-center justify-center bg-black/60 text-center">
+                            <p class="font-brand text-xl p-6">Catch 10 Slices!<br><span class="text-sm font-sans text-yellow-400">Click to Start</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="user-wallet" class="mt-20 hidden">
+                <h3 class="text-2xl font-brand mb-8 text-white border-b border-white/10 pb-4">My Saved Rewards</h3>
+                <div id="wallet-items" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- PAGE: ADMIN -->
+    <main id="page-admin" class="page bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 py-12">
+            <h2 class="text-4xl font-brand text-dark mb-8">Admin Console</h2>
+            <div class="bg-white rounded-3xl shadow-sm border overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 border-b">
+                        <tr>
+                            <th class="p-6 font-bold">User</th>
+                            <th class="p-6 font-bold">Code</th>
+                            <th class="p-6 font-bold">Discount</th>
+                            <th class="p-6 font-bold">Status</th>
+                            <th class="p-6 font-bold">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Updated to use your Render URL
+        const API_URL = "https://ppizzaserver.onrender.com";
+        
+        let currentUser = JSON.parse(localStorage.getItem('pizza_user')) || null;
+        let authMode = 'login';
+        let cart = [];
+        let score = 0;
+        let gameActive = false;
+
+        const pizzas = [
+            { id: 1, name: "Pepperoni American", price: 16, desc: "Classic bold pepperoni.", img: "https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400" },
+            { id: 2, name: "Special Margarita", price: 14, desc: "Cheesiest cheese experience.", img: "https://images.unsplash.com/photo-1574071318508-1cdbad80ad38?w=400" },
+            { id: 3, name: "Hawaiian", price: 17, desc: "Pineapple & smoked ham.", img: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400" },
+            { id: 4, name: "Farmhouse", price: 16, desc: "Mushrooms and local ham.", img: "https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?w=400" },
+            { id: 5, name: "Three Cheese", price: 15, desc: "Sharp cheddar & mozzarella.", img: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400" },
+            { id: 6, name: "The Olive Pizza", price: 14, desc: "Black olives & garlic oil.", img: "https://images.unsplash.com/photo-1534308983496-4fabb1a015ee?w=400" }
+        ];
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(`page-${pageId}`).classList.add('active');
+            updateNav();
+            if(pageId === 'admin') loadAdminData();
+            if(pageId === 'rewards') updateWalletUI();
+        }
+
+        function toggleAuthMode(mode) {
+            authMode = mode;
+            document.querySelectorAll('.auth-toggle').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-mode-${mode}`).classList.add('active');
+            document.getElementById('auth-title').innerText = mode === 'login' ? 'Welcome Back' : 'Create Account';
+            document.getElementById('auth-submit-btn').innerText = mode === 'login' ? 'Sign In' : 'Join Now';
+        }
+
+        function updateNav() {
+            const group = document.getElementById('auth-nav-group');
+            if (currentUser) {
+                group.innerHTML = `
+                    <span class="text-[10px] text-gray-400 font-bold">${currentUser.email}</span>
+                    ${currentUser.isAdmin ? `<button onclick="showPage('admin')" class="text-red-600 font-bold ml-2">Admin</button>` : ''}
+                    <button onclick="logout()" class="text-gray-500 font-bold ml-2">Logout</button>
+                `;
+            } else {
+                group.innerHTML = `<button onclick="showPage('auth')" class="text-red-600 font-bold border-2 border-red-600 px-4 py-1 rounded-full hover:bg-red-600 hover:text-white transition">Login</button>`;
+            }
+        }
+
+        document.getElementById('auth-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-pass').value;
+            const endpoint = authMode === 'login' ? '/login' : '/signup';
+            
+            try {
+                const res = await fetch(`${API_URL}${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password: pass })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    currentUser = data;
+                    localStorage.setItem('pizza_user', JSON.stringify(currentUser));
+                    showPage('home');
+                } else {
+                    alert(data.message || "Authentication failed");
+                }
+            } catch (err) { alert("Could not connect to server at " + API_URL); }
+        });
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('pizza_user');
+            showPage('home');
+        }
+
+        function startGame() {
+            if (gameActive) return;
+            gameActive = true; score = 0;
+            document.getElementById('game-msg').classList.add('hidden');
+            gameLoop();
+        }
+
+        function gameLoop() {
+            if (!gameActive) return;
+            const container = document.getElementById('game-container');
+            const slice = document.createElement('div');
+            slice.className = 'game-obj';
+            slice.innerText = '🍕';
+            slice.style.left = Math.random() * (container.offsetWidth - 30) + 'px';
+            slice.style.top = '-40px';
+            container.appendChild(slice);
+
+            let top = -40;
+            const fall = setInterval(() => {
+                top += 6;
+                slice.style.top = top + 'px';
+                const pRect = document.getElementById('game-player').getBoundingClientRect();
+                const sRect = slice.getBoundingClientRect();
+                if (sRect.bottom >= pRect.top && sRect.left < pRect.right && sRect.right > pRect.left) {
+                    score++;
+                    document.getElementById('score-display').innerText = `${score} / 10`;
+                    slice.remove(); clearInterval(fall);
+                    if (score >= 10) winGame();
+                }
+                if (top > 400) { slice.remove(); clearInterval(fall); }
+            }, 20);
+            if (gameActive) setTimeout(gameLoop, 700);
+        }
+
+        async function winGame() {
+            gameActive = false;
+            const reward = {
+                id: "PZ-" + Math.random().toString(36).substr(2, 6).toUpperCase(),
+                userId: currentUser ? currentUser.id : 'guest',
+                userEmail: currentUser ? currentUser.email : 'Guest',
+                discount: "20%",
+                status: 'pending'
+            };
+
+            try {
+                await fetch(`${API_URL}/rewards`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(reward)
+                });
+            } catch (e) { console.error("Save failed", e); }
+
+            document.getElementById('game-msg').innerHTML = `<p class="font-brand text-2xl text-yellow-400">WINNER!</p>`;
+            document.getElementById('game-msg').classList.remove('hidden');
+            updateWalletUI();
+        }
+
+        async function updateWalletUI() {
+            if(!currentUser) return;
+            document.getElementById('user-wallet').classList.remove('hidden');
+            try {
+                const res = await fetch(`${API_URL}/rewards/${currentUser.id}`);
+                const rewards = await res.json();
+                document.getElementById('wallet-items').innerHTML = rewards.map(r => `
+                    <div class="bg-white/5 p-6 rounded-2xl border border-white/10">
+                        <p class="font-mono text-xl">${r.id}</p>
+                        <p class="text-xs text-yellow-400 font-bold">${r.status.toUpperCase()}</p>
+                    </div>
+                `).join('');
+            } catch (e) { console.error("Wallet load failed", e); }
+        }
+
+        async function loadAdminData() {
+            try {
+                const res = await fetch(`${API_URL}/admin/rewards`);
+                const rewards = await res.json();
+                document.getElementById('admin-table-body').innerHTML = rewards.slice().reverse().map(r => `
+                    <tr class="border-b">
+                        <td class="p-6">${r.userEmail}</td>
+                        <td class="p-6 font-mono">${r.id}</td>
+                        <td class="p-6">${r.discount}</td>
+                        <td class="p-6">${r.status}</td>
+                        <td class="p-6">
+                            ${r.status === 'pending' ? `<button onclick="redeem('${r.id}')" class="bg-black text-white px-3 py-1 rounded">Redeem</button>` : '-'}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) { console.error("Admin load failed", e); }
+        }
+
+        async function redeem(id) {
+            await fetch(`${API_URL}/rewards/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'redeemed' })
+            });
+            loadAdminData();
+        }
+
+        function toggleCart() { document.getElementById('cart-sidebar').classList.toggle('translate-x-full'); }
+        function addToCart(id) { cart.push(pizzas.find(x => x.id === id)); updateCart(); }
+        function updateCart() {
+            document.getElementById('cart-count').innerText = cart.length;
+            document.getElementById('cart-items').innerHTML = cart.map(i => `<div class="p-3 bg-gray-100 rounded-lg">${i.name}</div>`).join('');
+            document.getElementById('cart-total').innerText = `$${cart.reduce((a,b) => a+b.price, 0)}`;
+        }
+
+        document.getElementById('game-container').addEventListener('mousemove', (e) => {
+            const rect = document.getElementById('game-container').getBoundingClientRect();
+            document.getElementById('game-player').style.left = (e.clientX - rect.left) + 'px';
+        });
+
+        window.onload = () => {
+            updateNav();
+            document.getElementById('pizza-grid').innerHTML = pizzas.map(p => `
+                <div class="border rounded-3xl overflow-hidden bg-white p-6 shadow-sm">
+                    <img src="${p.img}" class="w-full h-48 object-cover rounded-2xl mb-4">
+                    <h3 class="font-bold text-xl">${p.name}</h3>
+                    <p class="text-gray-500 mb-6">${p.desc}</p>
+                    <button onclick="addToCart(${p.id})" class="w-full py-3 bg-black text-white rounded-xl">Add $${p.price}</button>
+                </div>
+            `).join('');
+        };
+    </script>
+</body>
+</html>
