@@ -77,7 +77,26 @@ app.post('/login', (req, res) => {
     res.json({ email: user.email, id: user.id, isAdmin: false });
 });
 
-// 3. Rewards - Save new reward
+// 3. Orders - Save new order
+app.post('/orders', (req, res) => {
+    const order = req.body;
+    const data = readData();
+    
+    // Add unique ID if not present
+    if (!order.id) order.id = "ORD-" + Date.now();
+    
+    data.orders.push(order);
+    saveData(data);
+    res.status(201).json(order);
+});
+
+// 4. Orders - Admin get all
+app.get('/admin/orders', (req, res) => {
+    const data = readData();
+    res.json(data.orders || []);
+});
+
+// 5. Rewards - Save new reward
 app.post('/rewards', (req, res) => {
     const reward = req.body; 
     const data = readData();
@@ -86,7 +105,7 @@ app.post('/rewards', (req, res) => {
     res.status(201).json(reward);
 });
 
-// 4. Rewards - Get user rewards
+// 6. Rewards - Get user rewards
 app.get('/rewards/:userId', (req, res) => {
     const { userId } = req.params;
     const data = readData();
@@ -94,13 +113,13 @@ app.get('/rewards/:userId', (req, res) => {
     res.json(userRewards);
 });
 
-// 5. Rewards - Admin get all
+// 7. Rewards - Admin get all
 app.get('/admin/rewards', (req, res) => {
     const data = readData();
     res.json(data.rewards);
 });
 
-// 6. Rewards - Redeem
+// 8. Rewards - Redeem
 app.patch('/rewards/:rewardId', (req, res) => {
     const { rewardId } = req.params;
     const { status } = req.body;
