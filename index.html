@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Perfect Pizza | Premium Ordering & Rewards</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -16,32 +16,46 @@
             --dark: #1d3557;
         }
 
-        body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; overflow-x: hidden; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            scroll-behavior: smooth; 
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
         .font-brand { font-family: 'Bungee', cursive; }
         .hero-gradient {
             background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=2000');
             background-size: cover; background-position: center;
         }
 
-        .page { display: none; min-height: 100vh; padding-top: 80px; }
+        .page { display: none; min-height: 100vh; padding-top: 80px; padding-bottom: 80px; }
         .page.active { display: block; animation: fadeIn 0.3s ease-in; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         #game-container {
             position: relative; width: 100%; height: 400px; background: #1a202c;
-            overflow: hidden; border-radius: 1rem; cursor: crosshair;
+            overflow: hidden; border-radius: 1.5rem; cursor: crosshair;
+            touch-action: none; /* Prevents scrolling while playing on mobile */
         }
-        .game-obj { position: absolute; font-size: 2rem; user-select: none; }
-        #game-player { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 3rem; }
+        .game-obj { position: absolute; font-size: 2.5rem; user-select: none; }
+        #game-player { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 3.5rem; pointer-events: none; }
         
         .auth-toggle.active { border-bottom: 3px solid var(--primary); color: var(--primary); }
+
+        /* Mobile Bottom Nav Shadow */
+        .mobile-nav-glow {
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+        }
+
+        /* Hide Scrollbar for cleaner mobile look */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900">
 
-    <!-- Navigation -->
-    <nav class="fixed w-full z-50 bg-white/95 backdrop-blur-md shadow-sm border-b">
+    <!-- Desktop Navigation -->
+    <nav class="fixed w-full z-50 bg-white/95 backdrop-blur-md shadow-sm border-b hidden md:block">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-20 items-center">
                 <div class="flex items-center gap-3 cursor-pointer" onclick="showPage('home')">
@@ -51,27 +65,64 @@
                     <span class="text-xl font-brand text-red-600 tracking-tighter">PERFECT PIZZA</span>
                 </div>
                 
-                <div class="hidden md:flex space-x-6 font-semibold uppercase text-xs tracking-widest items-center">
+                <div class="flex space-x-6 font-semibold uppercase text-xs tracking-widest items-center">
                     <button onclick="showPage('home')" class="hover:text-red-600 transition">Home</button>
                     <button onclick="showPage('menu')" class="hover:text-red-600 transition">Menu</button>
                     <button onclick="showPage('rewards')" class="hover:text-red-600 transition">Play & Win</button>
                     
-                    <div id="auth-nav-group" class="flex items-center gap-4 border-l pl-6 ml-2"></div>
+                    <div id="auth-nav-group-desktop" class="flex items-center gap-4 border-l pl-6 ml-2"></div>
 
                     <button onclick="toggleCart()" class="relative p-2 text-gray-700 hover:text-red-600 transition">
                         <i class="fas fa-shopping-basket text-xl"></i>
-                        <span id="cart-count" class="absolute top-0 right-0 bg-red-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">0</span>
+                        <span id="cart-count-desktop" class="absolute top-0 right-0 bg-red-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">0</span>
                     </button>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Sidebar Cart -->
-    <div id="cart-sidebar" class="fixed inset-y-0 right-0 w-80 bg-white shadow-2xl z-[60] transform translate-x-full transition-transform duration-300 p-6 flex flex-col">
+    <!-- Mobile Top Bar -->
+    <nav class="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b md:hidden flex items-center justify-between px-5 h-16">
+        <div class="flex items-center gap-2" onclick="showPage('home')">
+            <i class="fas fa-pizza-slice text-red-600"></i>
+            <span class="font-brand text-sm tracking-tighter text-red-600">PERFECT PIZZA</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <div id="auth-nav-group-mobile-top"></div>
+            <button onclick="toggleCart()" class="relative text-gray-700">
+                <i class="fas fa-shopping-basket text-xl"></i>
+                <span id="cart-count-mobile" class="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">0</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="fixed bottom-0 w-full z-50 bg-white border-t md:hidden mobile-nav-glow">
+        <div class="flex justify-around items-center h-16">
+            <button onclick="showPage('home')" class="flex flex-col items-center gap-1 text-gray-400 nav-btn-home">
+                <i class="fas fa-home text-lg"></i>
+                <span class="text-[10px] font-bold uppercase tracking-widest">Home</span>
+            </button>
+            <button onclick="showPage('menu')" class="flex flex-col items-center gap-1 text-gray-400 nav-btn-menu">
+                <i class="fas fa-utensils text-lg"></i>
+                <span class="text-[10px] font-bold uppercase tracking-widest">Menu</span>
+            </button>
+            <button onclick="showPage('rewards')" class="flex flex-col items-center gap-1 text-gray-400 nav-btn-rewards">
+                <i class="fas fa-gamepad text-lg"></i>
+                <span class="text-[10px] font-bold uppercase tracking-widest">Play</span>
+            </button>
+            <button onclick="showPage('auth')" id="mobile-auth-btn" class="flex flex-col items-center gap-1 text-gray-400 nav-btn-auth">
+                <i class="fas fa-user text-lg"></i>
+                <span class="text-[10px] font-bold uppercase tracking-widest">Profile</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Sidebar Cart (Responsive Width) -->
+    <div id="cart-sidebar" class="fixed inset-y-0 right-0 w-full sm:w-80 bg-white shadow-2xl z-[60] transform translate-x-full transition-transform duration-300 p-6 flex flex-col">
         <div class="flex justify-between items-center mb-8 border-b pb-4">
-            <h2 class="text-xl font-brand">Order</h2>
-            <button onclick="toggleCart()" class="text-gray-400"><i class="fas fa-times"></i></button>
+            <h2 class="text-xl font-brand">Your Basket</h2>
+            <button onclick="toggleCart()" class="text-gray-400 p-2"><i class="fas fa-times text-xl"></i></button>
         </div>
         <div id="cart-items" class="flex-grow overflow-y-auto space-y-4"></div>
         <div class="border-t pt-4 mt-4">
@@ -79,123 +130,134 @@
                 <span>Total:</span>
                 <span id="cart-total">£0.00</span>
             </div>
-            <button id="checkout-btn" onclick="processOrder()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 disabled:opacity-50">Checkout</button>
+            <button id="checkout-btn" onclick="processOrder()" class="w-full bg-red-600 text-white py-4 rounded-2xl font-bold hover:bg-red-700 disabled:opacity-50 transition-all active:scale-95">Checkout</button>
         </div>
     </div>
 
     <!-- PAGE: HOME -->
     <main id="page-home" class="page active relative">
-        <section class="hero-gradient h-[85vh] flex items-center justify-center text-center text-white px-4">
+        <section class="hero-gradient h-[75vh] md:h-[85vh] flex items-center justify-center text-center text-white px-6">
             <div class="max-w-4xl">
-                <div class="mb-8 flex flex-col items-center justify-center">
-                    <div class="w-24 h-24 bg-red-600 rounded-full flex items-center justify-center shadow-2xl animate-pulse">
-                        <i class="fas fa-pizza-slice text-5xl text-white"></i>
+                <div class="mb-6 flex flex-col items-center justify-center">
+                    <div class="w-20 h-20 md:w-24 md:h-24 bg-red-600 rounded-full flex items-center justify-center shadow-2xl animate-pulse">
+                        <i class="fas fa-pizza-slice text-4xl md:text-5xl text-white"></i>
                     </div>
                 </div>
-                <h1 class="text-5xl md:text-7xl font-brand mb-4">Handcrafted Perfection</h1>
-                <p class="text-xl md:text-2xl mb-10 text-gray-200">The most rewarded pizza in the city.</p>
-                <div class="flex gap-4 justify-center">
-                    <button onclick="showPage('menu')" class="bg-red-600 px-8 py-4 rounded-full font-bold text-lg hover:scale-105 transition">Order Now</button>
-                    <button onclick="showPage('rewards')" class="bg-white/10 border border-white px-8 py-4 rounded-full font-bold text-lg hover:bg-white/20 transition">Play Games</button>
+                <h1 class="text-4xl md:text-7xl font-brand mb-4 leading-tight">Handcrafted Perfection</h1>
+                <p class="text-lg md:text-2xl mb-8 text-gray-200">The most rewarded pizza in the city.</p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button onclick="showPage('menu')" class="bg-red-600 px-8 py-4 rounded-full font-bold text-lg hover:scale-105 transition active:scale-95">Order Now</button>
+                    <button onclick="showPage('rewards')" class="bg-white/10 border border-white/30 backdrop-blur-md px-8 py-4 rounded-full font-bold text-lg hover:bg-white/20 transition active:scale-95">Play Games</button>
                 </div>
             </div>
         </section>
     </main>
 
     <!-- PAGE: AUTH -->
-    <main id="page-auth" class="page bg-gray-100 flex items-center justify-center">
-        <div class="max-w-md w-full mx-auto p-8 bg-white rounded-3xl shadow-xl mt-12">
+    <main id="page-auth" class="page bg-gray-100 flex items-center justify-center px-4">
+        <div class="max-w-md w-full mx-auto p-6 md:p-8 bg-white rounded-[2.5rem] shadow-xl">
             <div class="flex mb-8 border-b">
                 <button onclick="toggleAuthMode('login')" id="btn-mode-login" class="auth-toggle active flex-1 py-3 font-bold uppercase text-xs tracking-widest">Login</button>
                 <button onclick="toggleAuthMode('signup')" id="btn-mode-signup" class="auth-toggle flex-1 py-3 font-bold uppercase text-xs tracking-widest">Sign Up</button>
             </div>
-            <h2 id="auth-title" class="text-3xl font-brand text-center mb-8 text-gray-800">Welcome Back</h2>
+            <h2 id="auth-title" class="text-2xl md:text-3xl font-brand text-center mb-8 text-gray-800">Welcome Back</h2>
             <form id="auth-form" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Email</label>
-                    <input type="email" id="auth-email" required class="w-full p-4 bg-gray-50 border rounded-2xl outline-none" placeholder="you@example.com">
+                    <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 ml-2">Email Address</label>
+                    <input type="email" id="auth-email" required class="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:border-red-600 transition" placeholder="you@example.com">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Password</label>
-                    <input type="password" id="auth-pass" required class="w-full p-4 bg-gray-50 border rounded-2xl outline-none" placeholder="••••••••">
+                    <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1 ml-2">Password</label>
+                    <input type="password" id="auth-pass" required class="w-full p-4 bg-gray-50 border rounded-2xl outline-none focus:border-red-600 transition" placeholder="••••••••">
                 </div>
-                <button type="submit" id="auth-submit-btn" class="w-full bg-red-600 text-white py-4 rounded-2xl font-bold hover:bg-red-700 shadow-lg mt-4">Sign In</button>
+                <button type="submit" id="auth-submit-btn" class="w-full bg-red-600 text-white py-4 rounded-2xl font-bold hover:bg-red-700 shadow-lg mt-4 active:scale-95 transition-transform">Sign In</button>
             </form>
+            <div id="logout-section" class="hidden mt-6 text-center">
+                <p class="text-sm text-gray-500 mb-4">You are logged in as <span id="user-email-display" class="font-bold text-gray-800"></span></p>
+                <button onclick="logout()" class="text-red-600 font-bold uppercase text-xs tracking-widest border border-red-200 px-6 py-2 rounded-full">Logout</button>
+            </div>
         </div>
     </main>
 
     <!-- PAGE: MENU -->
     <main id="page-menu" class="page bg-white">
-        <div class="max-w-7xl mx-auto px-4 py-12">
-            <h2 class="text-4xl font-brand text-center mb-16">The Signature Menu</h2>
-            <div id="pizza-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+        <div class="max-w-7xl mx-auto px-4 py-8 md:py-12">
+            <h2 class="text-3xl md:text-4xl font-brand text-center mb-10 md:mb-16">The Signature Menu</h2>
+            <div id="pizza-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8"></div>
         </div>
     </main>
 
     <!-- PAGE: REWARDS -->
     <main id="page-rewards" class="page bg-slate-900 text-white">
-        <div class="max-w-7xl mx-auto px-4 py-12">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div class="max-w-7xl mx-auto px-4 py-8 md:py-12">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-16 items-center">
                 <div>
-                    <h2 class="text-4xl font-brand mb-6 text-yellow-400">Rewards Zone</h2>
-                    <p class="text-gray-300 mb-8">Win the game to earn barcodes. Logged in users save rewards automatically.</p>
-                    <div id="reward-status-card" class="bg-white/10 p-8 rounded-3xl border border-white/20 text-center">
-                        <div id="reward-display"><p class="text-gray-400 italic">Catch 10 slices to win!</p></div>
-                        <div id="score-display" class="mt-6 font-brand text-3xl text-yellow-400">0 / 10</div>
+                    <h2 class="text-3xl md:text-4xl font-brand mb-4 text-yellow-400">Rewards Zone</h2>
+                    <p class="text-gray-400 mb-6 text-sm md:text-base">Catch 10 slices to earn a discount code. Log in to save them to your wallet!</p>
+                    <div id="reward-status-card" class="bg-white/5 p-6 md:p-8 rounded-3xl border border-white/10 text-center">
+                        <div id="reward-display"><p class="text-gray-400 italic text-sm">Game Ready: Catch 10 slices!</p></div>
+                        <div id="score-display" class="mt-4 font-brand text-4xl text-yellow-400">0 / 10</div>
                     </div>
                 </div>
                 <div id="game-area">
                     <div id="game-container" onclick="startGame()">
                         <div id="game-player">🍕</div>
-                        <div id="game-msg" class="absolute inset-0 flex items-center justify-center bg-black/60 text-center">
-                            <p class="font-brand text-xl p-6">Catch 10 Slices!<br><span class="text-sm font-sans text-yellow-400">Click to Start</span></p>
+                        <div id="game-msg" class="absolute inset-0 flex items-center justify-center bg-black/70 text-center z-10">
+                            <div class="p-6">
+                                <p class="font-brand text-2xl mb-2">Ready?</p>
+                                <p class="text-sm text-yellow-400 mb-6 uppercase tracking-widest font-bold">Tap to Start Game</p>
+                                <div class="w-12 h-12 border-2 border-white/30 rounded-full mx-auto flex items-center justify-center animate-bounce">
+                                    <i class="fas fa-arrow-down text-white"></i>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                    <p class="text-center text-[10px] text-gray-500 mt-4 uppercase tracking-widest">Move your finger/mouse to catch slices</p>
                 </div>
             </div>
-            <div id="user-wallet" class="mt-20 hidden">
-                <h3 class="text-2xl font-brand mb-8 text-white border-b border-white/10 pb-4">My Saved Rewards</h3>
-                <div id="wallet-items" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
+            <div id="user-wallet" class="mt-16 hidden">
+                <h3 class="text-xl md:text-2xl font-brand mb-8 text-white border-b border-white/10 pb-4">My Saved Rewards</h3>
+                <div id="wallet-items" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6"></div>
             </div>
         </div>
     </main>
 
     <!-- PAGE: ADMIN -->
     <main id="page-admin" class="page bg-gray-50">
-        <div class="max-w-7xl mx-auto px-4 py-12">
-            <div class="flex justify-between items-center mb-8">
-                <h2 class="text-4xl font-brand text-dark">Admin Console</h2>
-                <div class="flex gap-2">
-                    <button onclick="setAdminTab('rewards')" id="tab-rewards" class="px-6 py-2 bg-red-600 text-white rounded-full font-bold">Rewards</button>
-                    <button onclick="setAdminTab('orders')" id="tab-orders" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-full font-bold">Orders</button>
+        <div class="max-w-7xl mx-auto px-4 py-8 md:py-12">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                <h2 class="text-3xl md:text-4xl font-brand text-dark">Admin Console</h2>
+                <div class="flex gap-2 w-full md:w-auto">
+                    <button onclick="setAdminTab('rewards')" id="tab-rewards" class="flex-1 md:flex-none px-6 py-3 bg-red-600 text-white rounded-2xl font-bold text-xs uppercase tracking-widest transition">Rewards</button>
+                    <button onclick="setAdminTab('orders')" id="tab-orders" class="flex-1 md:flex-none px-6 py-3 bg-gray-200 text-gray-700 rounded-2xl font-bold text-xs uppercase tracking-widest transition">Orders</button>
                 </div>
             </div>
 
-            <!-- Rewards Table -->
-            <div id="admin-rewards-section" class="bg-white rounded-3xl shadow-sm border overflow-hidden">
-                <table class="w-full text-left">
+            <!-- Rewards Table (Scrollable on Mobile) -->
+            <div id="admin-rewards-section" class="bg-white rounded-3xl shadow-sm border overflow-x-auto">
+                <table class="w-full text-left min-w-[600px]">
                     <thead class="bg-gray-50 border-b">
                         <tr>
-                            <th class="p-6 font-bold">User</th>
-                            <th class="p-6 font-bold">Code</th>
-                            <th class="p-6 font-bold">Discount</th>
-                            <th class="p-6 font-bold">Status</th>
-                            <th class="p-6 font-bold">Action</th>
+                            <th class="p-4 md:p-6 font-bold text-xs uppercase text-gray-400">User</th>
+                            <th class="p-4 md:p-6 font-bold text-xs uppercase text-gray-400">Code</th>
+                            <th class="p-4 md:p-6 font-bold text-xs uppercase text-gray-400">Discount</th>
+                            <th class="p-4 md:p-6 font-bold text-xs uppercase text-gray-400">Status</th>
+                            <th class="p-4 md:p-6 font-bold text-xs uppercase text-gray-400">Action</th>
                         </tr>
                     </thead>
                     <tbody id="admin-table-body"></tbody>
                 </table>
             </div>
 
-            <!-- Orders Table -->
-            <div id="admin-orders-section" class="hidden bg-white rounded-3xl shadow-sm border overflow-hidden">
-                <table class="w-full text-left">
+            <!-- Orders Table (Scrollable on Mobile) -->
+            <div id="admin-orders-section" class="hidden bg-white rounded-3xl shadow-sm border overflow-x-auto">
+                <table class="w-full text-left min-w-[600px]">
                     <thead class="bg-gray-50 border-b">
                         <tr>
-                            <th class="p-6 font-bold">User</th>
-                            <th class="p-6 font-bold">Items</th>
-                            <th class="p-6 font-bold">Total</th>
-                            <th class="p-6 font-bold">Date</th>
+                            <th class="p-4 md:p-6 font-bold text-xs uppercase text-gray-400">User</th>
+                            <th class="p-4 md:p-6 font-bold text-xs uppercase text-gray-400">Items</th>
+                            <th class="p-4 md:p-6 font-bold text-xs uppercase text-gray-400">Total</th>
+                            <th class="p-4 md:p-6 font-bold text-xs uppercase text-gray-400">Date</th>
                         </tr>
                     </thead>
                     <tbody id="admin-orders-body"></tbody>
@@ -215,41 +277,65 @@
         let currentAdminTab = 'rewards';
 
         const pizzas = [
-            { id: 1, name: "Pepperoni American", price: 16, desc: "Classic bold pepperoni.", img: "https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400" },
-            { id: 2, name: "Special Margarita", price: 14, desc: "Cheesiest cheese experience.", img: "https://images.unsplash.com/photo-1574071318508-1cdbad80ad38?w=400" },
-            { id: 3, name: "Hawaiian", price: 17, desc: "Pineapple & smoked ham.", img: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400" },
-            { id: 4, name: "Farmhouse", price: 16, desc: "Mushrooms and local ham.", img: "https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?w=400" },
-            { id: 5, name: "Three Cheese", price: 15, desc: "Sharp cheddar & mozzarella.", img: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400" },
-            { id: 6, name: "The Olive Pizza", price: 14, desc: "Black olives & garlic oil.", img: "https://images.unsplash.com/photo-1534308983496-4fabb1a015ee?w=400" }
+            { id: 1, name: "Pepperoni American", price: 16, desc: "Classic bold pepperoni with mozzarella.", img: "https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400" },
+            { id: 2, name: "Special Margarita", price: 14, desc: "San Marzano tomatoes & fresh basil.", img: "https://images.unsplash.com/photo-1574071318508-1cdbad80ad38?w=400" },
+            { id: 3, name: "Hawaiian", price: 17, desc: "Caramelized pineapple & honey ham.", img: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400" },
+            { id: 4, name: "Farmhouse", price: 16, desc: "Portobello mushrooms and garlic.", img: "https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?w=400" },
+            { id: 5, name: "Three Cheese", price: 15, desc: "Sharp cheddar, parmesan & mozzarella.", img: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400" },
+            { id: 6, name: "The Olive Pizza", price: 14, desc: "Black olives, garlic oil & oregano.", img: "https://images.unsplash.com/photo-1534308983496-4fabb1a015ee?w=400" }
         ];
 
         function showPage(pageId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(`page-${pageId}`).classList.add('active');
+            
+            // Update Mobile Nav Active States
+            document.querySelectorAll('[class*="nav-btn-"]').forEach(btn => btn.classList.replace('text-red-600', 'text-gray-400'));
+            const activeBtn = document.querySelector(`.nav-btn-${pageId}`);
+            if(activeBtn) activeBtn.classList.replace('text-gray-400', 'text-red-600');
+            
+            window.scrollTo(0, 0);
             updateNav();
             if(pageId === 'admin') loadAdminData();
             if(pageId === 'rewards') updateWalletUI();
+            if(pageId === 'auth' && currentUser) {
+                document.getElementById('auth-form').classList.add('hidden');
+                document.getElementById('logout-section').classList.remove('hidden');
+                document.getElementById('user-email-display').innerText = currentUser.email;
+                document.getElementById('auth-title').innerText = "Account Settings";
+            } else if (pageId === 'auth') {
+                document.getElementById('auth-form').classList.remove('hidden');
+                document.getElementById('logout-section').classList.add('hidden');
+                toggleAuthMode(authMode);
+            }
         }
 
         function toggleAuthMode(mode) {
             authMode = mode;
             document.querySelectorAll('.auth-toggle').forEach(b => b.classList.remove('active'));
-            document.getElementById(`btn-mode-${mode}`).classList.add('active');
+            const activeToggle = document.getElementById(`btn-mode-${mode}`);
+            if(activeToggle) activeToggle.classList.add('active');
             document.getElementById('auth-title').innerText = mode === 'login' ? 'Welcome Back' : 'Create Account';
             document.getElementById('auth-submit-btn').innerText = mode === 'login' ? 'Sign In' : 'Join Now';
         }
 
         function updateNav() {
-            const group = document.getElementById('auth-nav-group');
-            if (currentUser) {
-                group.innerHTML = `
-                    <span class="text-[10px] text-gray-400 font-bold">${currentUser.email}</span>
-                    ${currentUser.isAdmin ? `<button onclick="showPage('admin')" class="text-red-600 font-bold ml-2">Admin</button>` : ''}
-                    <button onclick="logout()" class="text-gray-500 font-bold ml-2">Logout</button>
-                `;
-            } else {
-                group.innerHTML = `<button onclick="showPage('auth')" class="text-red-600 font-bold border-2 border-red-600 px-4 py-1 rounded-full hover:bg-red-600 hover:text-white transition">Login</button>`;
-            }
+            const desktopGroup = document.getElementById('auth-nav-group-desktop');
+            const mobileTopGroup = document.getElementById('auth-nav-group-mobile-top');
+            
+            const authHTML = currentUser ? `
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] text-gray-400 font-bold hidden lg:block">${currentUser.email}</span>
+                    ${currentUser.isAdmin ? `<button onclick="showPage('admin')" class="text-red-600 font-bold text-[10px] uppercase tracking-widest">Admin</button>` : ''}
+                    <button onclick="logout()" class="text-gray-400 font-bold text-[10px] uppercase tracking-widest">Logout</button>
+                </div>
+            ` : `
+                <button onclick="showPage('auth')" class="text-red-600 font-bold border-2 border-red-600 px-4 py-1 rounded-full hover:bg-red-600 hover:text-white transition text-xs">Login</button>
+            `;
+
+            if(desktopGroup) desktopGroup.innerHTML = authHTML;
+            if(mobileTopGroup) mobileTopGroup.innerHTML = currentUser && currentUser.isAdmin ? 
+                `<button onclick="showPage('admin')" class="bg-red-100 text-red-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Admin</button>` : '';
         }
 
         document.getElementById('auth-form').addEventListener('submit', async (e) => {
@@ -257,6 +343,10 @@
             const email = document.getElementById('auth-email').value;
             const pass = document.getElementById('auth-pass').value;
             const endpoint = authMode === 'login' ? '/login' : '/signup';
+            
+            const btn = document.getElementById('auth-submit-btn');
+            btn.disabled = true;
+            btn.innerText = "Authenticating...";
             
             try {
                 const res = await fetch(`${API_URL}${endpoint}`, {
@@ -272,18 +362,23 @@
                 } else {
                     alert(data.message || "Authentication failed");
                 }
-            } catch (err) { alert("Could not connect to server at " + API_URL); }
+            } catch (err) { alert("Server is waking up (Render Sleep). Please wait 30 seconds and try again."); }
+            finally { 
+                btn.disabled = false;
+                btn.innerText = authMode === 'login' ? 'Sign In' : 'Join Now';
+            }
         });
 
         function logout() {
             currentUser = null;
             localStorage.removeItem('pizza_user');
-            showPage('home');
+            showPage('auth');
         }
 
         function startGame() {
             if (gameActive) return;
-            gameActive = true; score = 0;
+            gameActive = true; 
+            score = 0;
             document.getElementById('game-msg').classList.add('hidden');
             document.getElementById('score-display').innerText = "0 / 10";
             gameLoop();
@@ -295,31 +390,49 @@
             const slice = document.createElement('div');
             slice.className = 'game-obj';
             slice.innerText = '🍕';
-            slice.style.left = Math.random() * (container.offsetWidth - 30) + 'px';
-            slice.style.top = '-40px';
+            slice.style.left = Math.random() * (container.offsetWidth - 40) + 'px';
+            slice.style.top = '-50px';
             container.appendChild(slice);
 
-            let top = -40;
+            let top = -50;
             const fall = setInterval(() => {
-                top += 6;
+                top += 5;
                 slice.style.top = top + 'px';
                 const pRect = document.getElementById('game-player').getBoundingClientRect();
                 const sRect = slice.getBoundingClientRect();
+                
                 if (sRect.bottom >= pRect.top && sRect.left < pRect.right && sRect.right > pRect.left) {
                     score++;
                     document.getElementById('score-display').innerText = `${score} / 10`;
-                    slice.remove(); clearInterval(fall);
+                    slice.remove(); 
+                    clearInterval(fall);
                     if (score >= 10) winGame();
                 }
-                if (top > 400) { slice.remove(); clearInterval(fall); }
-            }, 20);
-            if (gameActive) setTimeout(gameLoop, 700);
+                if (top > 450) { 
+                    slice.remove(); 
+                    clearInterval(fall); 
+                }
+            }, 16);
+            if (gameActive) setTimeout(gameLoop, 800);
         }
 
         async function winGame() {
             gameActive = false;
+            const rewardId = "PZ-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+            
+            const msgBox = document.getElementById('game-msg');
+            msgBox.innerHTML = `
+                <div class="p-6">
+                    <i class="fas fa-trophy text-yellow-400 text-5xl mb-4"></i>
+                    <p class="font-brand text-2xl text-white">WINNER!</p>
+                    <p class="text-xs text-gray-400 mt-2 mb-4">Code: ${rewardId}</p>
+                    <button onclick="startGame()" class="bg-red-600 text-white px-6 py-2 rounded-full font-bold text-xs uppercase tracking-widest">Play Again</button>
+                </div>
+            `;
+            msgBox.classList.remove('hidden');
+
             const reward = {
-                id: "PZ-" + Math.random().toString(36).substr(2, 6).toUpperCase(),
+                id: rewardId,
                 userId: currentUser ? currentUser.id : 'guest',
                 userEmail: currentUser ? currentUser.email : 'Guest',
                 discount: "20%",
@@ -332,11 +445,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(reward)
                 });
-            } catch (e) { console.error("Save failed", e); }
-
-            document.getElementById('game-msg').innerHTML = `<p class="font-brand text-2xl text-yellow-400">WINNER!</p><p class="text-white text-xs mt-2">Reward Saved to Wallet</p>`;
-            document.getElementById('game-msg').classList.remove('hidden');
-            updateWalletUI();
+                if(currentUser) updateWalletUI();
+            } catch (e) { console.error("Reward save error", e); }
         }
 
         async function updateWalletUI() {
@@ -346,18 +456,23 @@
                 const res = await fetch(`${API_URL}/rewards/${currentUser.id}`);
                 const rewards = await res.json();
                 document.getElementById('wallet-items').innerHTML = rewards.map(r => `
-                    <div class="bg-white/5 p-6 rounded-2xl border border-white/10">
-                        <p class="font-mono text-xl">${r.id}</p>
-                        <p class="text-xs text-yellow-400 font-bold">${r.status.toUpperCase()}</p>
+                    <div class="bg-white/5 p-6 rounded-3xl border border-white/10 flex justify-between items-center">
+                        <div>
+                            <p class="font-mono text-xl text-white">${r.id}</p>
+                            <p class="text-[10px] text-gray-400 uppercase tracking-widest">${r.discount} Discount</p>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase ${r.status === 'pending' ? 'bg-yellow-400/20 text-yellow-400' : 'bg-green-400/20 text-green-400'}">
+                            ${r.status}
+                        </span>
                     </div>
-                `).join('') || '<p class="text-gray-500">No rewards earned yet.</p>';
+                `).join('') || '<p class="text-gray-500 italic text-sm">No saved rewards found.</p>';
             } catch (e) { console.error("Wallet load failed", e); }
         }
 
         function setAdminTab(tab) {
             currentAdminTab = tab;
-            document.getElementById('tab-rewards').className = tab === 'rewards' ? 'px-6 py-2 bg-red-600 text-white rounded-full font-bold' : 'px-6 py-2 bg-gray-200 text-gray-700 rounded-full font-bold';
-            document.getElementById('tab-orders').className = tab === 'orders' ? 'px-6 py-2 bg-red-600 text-white rounded-full font-bold' : 'px-6 py-2 bg-gray-200 text-gray-700 rounded-full font-bold';
+            document.getElementById('tab-rewards').className = tab === 'rewards' ? 'px-6 py-3 bg-red-600 text-white rounded-2xl font-bold text-xs uppercase tracking-widest transition' : 'px-6 py-3 bg-gray-200 text-gray-700 rounded-2xl font-bold text-xs uppercase tracking-widest transition';
+            document.getElementById('tab-orders').className = tab === 'orders' ? 'px-6 py-3 bg-red-600 text-white rounded-2xl font-bold text-xs uppercase tracking-widest transition' : 'px-6 py-3 bg-gray-200 text-gray-700 rounded-2xl font-bold text-xs uppercase tracking-widest transition';
             
             document.getElementById('admin-rewards-section').classList.toggle('hidden', tab !== 'rewards');
             document.getElementById('admin-orders-section').classList.toggle('hidden', tab !== 'orders');
@@ -365,36 +480,36 @@
         }
 
         async function loadAdminData() {
-            if(currentAdminTab === 'rewards') {
-                try {
-                    const res = await fetch(`${API_URL}/admin/rewards`);
-                    const rewards = await res.json();
-                    document.getElementById('admin-table-body').innerHTML = rewards.slice().reverse().map(r => `
-                        <tr class="border-b">
-                            <td class="p-6">${r.userEmail}</td>
-                            <td class="p-6 font-mono">${r.id}</td>
-                            <td class="p-6">${r.discount}</td>
-                            <td class="p-6">${r.status}</td>
-                            <td class="p-6">
-                                ${r.status === 'pending' ? `<button onclick="redeem('${r.id}')" class="bg-black text-white px-3 py-1 rounded">Redeem</button>` : '-'}
+            const container = currentAdminTab === 'rewards' ? 'admin-table-body' : 'admin-orders-body';
+            const endpoint = currentAdminTab === 'rewards' ? '/admin/rewards' : '/admin/orders';
+            
+            try {
+                const res = await fetch(`${API_URL}${endpoint}`);
+                const data = await res.json();
+                
+                if(currentAdminTab === 'rewards') {
+                    document.getElementById(container).innerHTML = data.slice().reverse().map(r => `
+                        <tr class="border-b hover:bg-gray-50 transition">
+                            <td class="p-4 md:p-6 text-sm font-medium">${r.userEmail}</td>
+                            <td class="p-4 md:p-6 font-mono text-sm">${r.id}</td>
+                            <td class="p-4 md:p-6 text-sm">${r.discount}</td>
+                            <td class="p-4 md:p-6 text-xs uppercase font-bold ${r.status === 'pending' ? 'text-yellow-600' : 'text-green-600'}">${r.status}</td>
+                            <td class="p-4 md:p-6">
+                                ${r.status === 'pending' ? `<button onclick="redeem('${r.id}')" class="bg-black text-white px-4 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest active:scale-95 transition">Redeem</button>` : '-'}
                             </td>
                         </tr>
                     `).join('');
-                } catch (e) { console.error("Admin load failed", e); }
-            } else {
-                try {
-                    const res = await fetch(`${API_URL}/admin/orders`);
-                    const orders = await res.json();
-                    document.getElementById('admin-orders-body').innerHTML = orders.slice().reverse().map(o => `
-                        <tr class="border-b">
-                            <td class="p-6">${o.userEmail}</td>
-                            <td class="p-6 text-sm text-gray-500">${o.items.map(i => i.name).join(', ')}</td>
-                            <td class="p-6 font-bold text-red-600">£${o.total}.00</td>
-                            <td class="p-6 text-xs text-gray-400">${new Date(o.createdAt).toLocaleString()}</td>
+                } else {
+                    document.getElementById(container).innerHTML = data.slice().reverse().map(o => `
+                        <tr class="border-b hover:bg-gray-50 transition">
+                            <td class="p-4 md:p-6 text-sm font-medium">${o.userEmail}</td>
+                            <td class="p-4 md:p-6 text-xs text-gray-500">${o.items.map(i => i.name).join(', ')}</td>
+                            <td class="p-4 md:p-6 font-bold text-red-600 text-sm">£${o.total}.00</td>
+                            <td class="p-4 md:p-6 text-[10px] text-gray-400 uppercase">${new Date(o.createdAt).toLocaleDateString()}</td>
                         </tr>
-                    `).join('') || '<tr><td colspan="4" class="p-6 text-center text-gray-400">No orders yet</td></tr>';
-                } catch (e) { console.error("Admin orders load failed", e); }
-            }
+                    `).join('') || '<tr><td colspan="4" class="p-6 text-center text-gray-400 italic">No orders found.</td></tr>';
+                }
+            } catch (e) { console.error("Admin load error", e); }
         }
 
         async function redeem(id) {
@@ -414,13 +529,31 @@
         }
 
         function updateCart() {
-            document.getElementById('cart-count').innerText = cart.length;
-            document.getElementById('cart-items').innerHTML = cart.map(i => `<div class="p-3 bg-gray-100 rounded-lg flex justify-between"><span>${i.name}</span><span>£${i.price}</span></div>`).join('');
-            document.getElementById('cart-total').innerText = `£${cart.reduce((a,b) => a+b.price, 0)}.00`;
+            const count = cart.length;
+            document.getElementById('cart-count-desktop').innerText = count;
+            document.getElementById('cart-count-mobile').innerText = count;
+            
+            document.getElementById('cart-items').innerHTML = cart.map((i, idx) => `
+                <div class="p-4 bg-gray-50 rounded-2xl flex justify-between items-center group">
+                    <div>
+                        <p class="font-bold text-sm">${i.name}</p>
+                        <p class="text-xs text-gray-400">£${i.price}.00</p>
+                    </div>
+                    <button onclick="removeFromCart(${idx})" class="text-gray-300 hover:text-red-600 p-2"><i class="fas fa-trash-alt text-sm"></i></button>
+                </div>
+            `).join('');
+            
+            const total = cart.reduce((a,b) => a+b.price, 0);
+            document.getElementById('cart-total').innerText = `£${total}.00`;
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCart();
         }
 
         async function processOrder() {
-            if (cart.length === 0) return alert("Your cart is empty!");
+            if (cart.length === 0) return alert("Your basket is empty!");
             if (!currentUser) {
                 alert("Please log in to complete your order.");
                 showPage('auth');
@@ -430,7 +563,7 @@
 
             const btn = document.getElementById('checkout-btn');
             btn.disabled = true;
-            btn.innerText = "Processing...";
+            btn.innerText = "Placing Order...";
 
             const orderData = {
                 userId: currentUser.id,
@@ -448,7 +581,7 @@
                 });
 
                 if (response.ok) {
-                    alert(`Order confirmed! Your pizza is being prepared.`);
+                    alert(`Order confirmed! Your fresh pizza is being prepared.`);
                     cart = [];
                     updateCart();
                     toggleCart();
@@ -463,21 +596,46 @@
             }
         }
 
-        document.getElementById('game-container').addEventListener('mousemove', (e) => {
-            const rect = document.getElementById('game-container').getBoundingClientRect();
-            document.getElementById('game-player').style.left = (e.clientX - rect.left) + 'px';
-        });
+        // Game Controls - Combined Mouse & Touch
+        const gameContainer = document.getElementById('game-container');
+        const player = document.getElementById('game-player');
+
+        function movePlayer(e) {
+            const rect = gameContainer.getBoundingClientRect();
+            let x;
+            if (e.type.includes('touch')) {
+                x = e.touches[0].clientX - rect.left;
+            } else {
+                x = e.clientX - rect.left;
+            }
+            
+            // Boundary checks
+            if (x < 20) x = 20;
+            if (x > rect.width - 20) x = rect.width - 20;
+            
+            player.style.left = x + 'px';
+        }
+
+        gameContainer.addEventListener('mousemove', movePlayer);
+        gameContainer.addEventListener('touchmove', (e) => {
+            e.preventDefault(); // Stop mobile scroll
+            movePlayer(e);
+        }, { passive: false });
 
         window.onload = () => {
             updateNav();
             document.getElementById('pizza-grid').innerHTML = pizzas.map(p => `
-                <div class="border rounded-3xl overflow-hidden bg-white p-6 shadow-sm">
-                    <img src="${p.img}" class="w-full h-48 object-cover rounded-2xl mb-4">
-                    <h3 class="font-bold text-xl">${p.name}</h3>
-                    <p class="text-gray-500 mb-6">${p.desc}</p>
-                    <button onclick="addToCart(${p.id})" class="w-full py-3 bg-black text-white rounded-xl hover:bg-red-600 transition">Add £${p.price}</button>
+                <div class="border rounded-[2rem] overflow-hidden bg-white p-5 shadow-sm hover:shadow-md transition">
+                    <img src="${p.img}" class="w-full h-40 md:h-48 object-cover rounded-2xl mb-4">
+                    <h3 class="font-bold text-lg md:text-xl">${p.name}</h3>
+                    <p class="text-gray-400 text-xs md:text-sm mb-6">${p.desc}</p>
+                    <button onclick="addToCart(${p.id})" class="w-full py-4 bg-black text-white rounded-2xl font-bold uppercase text-[10px] tracking-widest hover:bg-red-600 transition active:scale-95">Add £${p.price}</button>
                 </div>
             `).join('');
+            
+            // Set home button as active on load for mobile
+            const homeBtn = document.querySelector('.nav-btn-home');
+            if(homeBtn) homeBtn.classList.replace('text-gray-400', 'text-red-600');
         };
     </script>
 </body>
