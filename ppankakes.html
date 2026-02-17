@@ -244,7 +244,6 @@
             const elem = document.getElementById('page-status');
             const btnText = document.getElementById('fs-btn-text');
 
-            // Attempt native Fullscreen API first
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                 const requestMethod = elem.requestFullscreen || elem.webkitRequestFullscreen || elem.msRequestFullscreen;
                 
@@ -259,7 +258,7 @@
             } else {
                 const exitMethod = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
                 if (exitMethod) exitMethod.call(document);
-                togglePseudoFullscreen(elem, btnText, true); // Ensure pseudo is cleared
+                togglePseudoFullscreen(elem, btnText, true); 
             }
         }
 
@@ -313,6 +312,7 @@
                 const res = await fetch(`${API_URL}/admin/orders`);
                 const orders = await res.json();
                 
+                // pending = Cooking, cooked = Ready, collected = (not shown on public board)
                 const preparing = orders.filter(o => o.status === 'pending').slice(-6);
                 const ready = orders.filter(o => o.status === 'cooked').slice(-6);
 
@@ -383,16 +383,28 @@
         }
 
         async function loadAdminData() {
+            if (!currentUser || !currentUser.isAdmin) return;
+            
             if (currentAdminTab === 'orders') {
                 const res = await fetch(`${API_URL}/admin/orders`);
                 const orders = await res.json();
                 document.getElementById('admin-orders-body').innerHTML = orders.slice().reverse().map(o => `
-                    <tr class="border-b ${o.status === 'cooked' ? 'opacity-40' : ''}">
+                    <tr class="border-b ${o.status === 'collected' ? 'opacity-30' : ''}">
                         <td class="p-6 font-bold">${o.userEmail}</td>
                         <td class="p-6 text-xs text-gray-500">${o.items.map(i => i.name).join(', ')}</td>
-                        <td class="p-6"><span class="uppercase font-bold text-[10px] px-2 py-1 rounded ${o.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}">${o.status}</span></td>
                         <td class="p-6">
-                            ${o.status === 'pending' ? `<button onclick="updateStatus('${o.id}', 'cooked')" class="bg-amber-600 text-white px-4 py-2 rounded-lg text-xs font-bold">READY</button>` : 'COMPLETED'}
+                            <span class="uppercase font-bold text-[10px] px-2 py-1 rounded ${
+                                o.status === 'pending' ? 'bg-amber-100 text-amber-700' : 
+                                o.status === 'cooked' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                            }">${o.status === 'pending' ? 'Cooking' : o.status === 'cooked' ? 'Ready' : 'Collected'}</span>
+                        </td>
+                        <td class="p-6">
+                            ${o.status === 'pending' ? 
+                                `<button onclick="updateStatus('${o.id}', 'cooked')" class="bg-amber-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-sm hover:bg-amber-500 transition">SET READY</button>` : 
+                              o.status === 'cooked' ? 
+                                `<button onclick="updateStatus('${o.id}', 'collected')" class="bg-green-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-sm hover:bg-green-500 transition">SET COLLECTED</button>` : 
+                                '<span class="text-xs text-gray-400">ARCHIVED</span>'
+                            }
                         </td>
                     </tr>
                 `).join('');
@@ -410,12 +422,20 @@
         }
 
         async function updateStatus(id, s) {
-            await fetch(`${API_URL}/orders/${id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: s })
-            });
-            loadAdminData();
+            if (!currentUser || !currentUser.isAdmin) {
+                alert("Unauthorized: Kitchen staff access only.");
+                return;
+            }
+            try {
+                await fetch(`${API_URL}/orders/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: s })
+                });
+                loadAdminData();
+            } catch (err) {
+                console.error("Update failed", err);
+            }
         }
 
         async function promote(id) {
