@@ -58,6 +58,18 @@
             background-size: 1em;
             padding-right: 2rem;
         }
+
+        .loading-spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            width: 12px;
+            height: 12px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-[#fffdfa] text-amber-950">
@@ -355,20 +367,24 @@
                         <td class="p-6 font-bold text-sm">${o.userEmail}</td>
                         <td class="p-6 text-xs text-gray-400 italic">${o.items.map(i => i.name).join(', ')}</td>
                         <td class="p-6">
-                            <span class="uppercase font-bold text-[10px] px-3 py-1 rounded-full ${
+                            <span id="badge-${o.id}" class="uppercase font-bold text-[10px] px-3 py-1 rounded-full ${
                                 o.status === 'pending' ? 'bg-amber-100 text-amber-700' : 
                                 o.status === 'cooked' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                             }">${o.status === 'pending' ? 'Cooking' : o.status === 'cooked' ? 'Ready' : 'Collected'}</span>
                         </td>
                         <td class="p-6">
-                            <select 
-                                onchange="updateStatus('${o.id}', this.value)" 
-                                class="status-select bg-white border border-gray-200 rounded-xl text-xs font-bold py-3 px-4 outline-none focus:ring-2 focus:ring-amber-500 transition cursor-pointer"
-                            >
-                                <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>Cooking</option>
-                                <option value="cooked" ${o.status === 'cooked' ? 'selected' : ''}>Ready</option>
-                                <option value="collected" ${o.status === 'collected' ? 'selected' : ''}>Collected</option>
-                            </select>
+                            <div class="relative inline-block w-full">
+                                <select 
+                                    id="select-${o.id}"
+                                    onchange="updateStatus('${o.id}', this.value)" 
+                                    class="status-select w-full bg-white border border-gray-200 rounded-xl text-xs font-bold py-3 px-4 outline-none focus:ring-2 focus:ring-amber-500 transition cursor-pointer"
+                                >
+                                    <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>Cooking</option>
+                                    <option value="cooked" ${o.status === 'cooked' ? 'selected' : ''}>Ready</option>
+                                    <option value="collected" ${o.status === 'collected' ? 'selected' : ''}>Collected</option>
+                                </select>
+                                <div id="spinner-${o.id}" class="hidden absolute right-10 top-1/2 -translate-y-1/2"><div class="loading-spinner"></div></div>
+                            </div>
                         </td>
                     </tr>
                 `).join('');
@@ -390,16 +406,39 @@
                 alert("Unauthorized staff only.");
                 return;
             }
+
+            const select = document.getElementById(`select-${id}`);
+            const spinner = document.getElementById(`spinner-${id}`);
+            
+            // UI Feedback
+            if(select) select.disabled = true;
+            if(spinner) spinner.classList.remove('hidden');
+
             try {
+                // IMPORTANT: Including the Auth token if available
                 const res = await fetch(`${API_URL}/orders/${id}`, {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentUser.token || ''}` // Sending token to backend
+                    },
                     body: JSON.stringify({ status: newStatus })
                 });
-                if (res.ok) loadAdminData();
-                else alert("Update failed on server.");
+
+                if (res.ok) {
+                    // Update successful - Refresh view
+                    loadAdminData();
+                } else {
+                    const err = await res.json();
+                    alert("Update failed: " + (err.message || "Server rejected the change."));
+                    loadAdminData(); // Revert UI
+                }
             } catch (err) {
-                alert("Network error updating status.");
+                alert("Network error updating status. Check connection.");
+                loadAdminData(); // Revert UI
+            } finally {
+                if(select) select.disabled = false;
+                if(spinner) spinner.classList.add('hidden');
             }
         }
 
