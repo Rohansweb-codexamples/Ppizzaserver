@@ -28,20 +28,28 @@
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        #game-container {
-            position: relative; width: 100%; height: 400px; background: #2d1a12;
-            overflow: hidden; border-radius: 1.5rem; cursor: crosshair; touch-action: none;
-        }
-        .game-obj { position: absolute; font-size: 2.5rem; user-select: none; }
-        #game-player { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 3.5rem; pointer-events: none; }
-        
         .auth-toggle.active { border-bottom: 3px solid var(--primary); color: var(--primary); }
 
-        /* Custom Modal Styles */
-        #custom-modal, #user-modal { display: none; }
-        #custom-modal.active, #user-modal.active { display: flex; }
-
         .admin-tab.active { background-color: var(--primary); color: white; }
+        
+        .status-pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* Full Screen Display Styles */
+        #page-status { padding-top: 20px; background-color: #1a1a1a; color: white; }
+        .status-card { background: #2a2a2a; border-radius: 1.5rem; }
+        
+        /* Pseudo-fullscreen class for environments that block the Fullscreen API */
+        .pseudo-fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 9999 !important;
+            padding-top: 40px !important;
+            margin: 0 !important;
+        }
     </style>
 </head>
 <body class="bg-[#fffdfa] text-amber-950">
@@ -57,7 +65,7 @@
             <div class="hidden md:flex space-x-6 font-semibold uppercase text-xs tracking-widest items-center">
                 <button onclick="showPage('home')" class="hover:text-amber-600 transition">Home</button>
                 <button onclick="showPage('menu')" class="hover:text-amber-600 transition">Menu</button>
-                <button onclick="showPage('rewards')" class="hover:text-amber-600 transition">Play</button>
+                <button onclick="showPage('status')" class="text-amber-600 font-bold px-4 py-2 border-2 border-amber-600 rounded-full hover:bg-amber-600 hover:text-white transition">Live Display</button>
                 <div id="auth-nav-group-desktop" class="flex items-center gap-4 border-l pl-6"></div>
                 <button onclick="toggleCart()" class="relative p-2 text-gray-700 hover:text-amber-600 transition">
                     <i class="fas fa-shopping-basket text-xl"></i>
@@ -67,64 +75,64 @@
         </div>
     </nav>
 
-    <!-- Mobile Nav -->
-    <nav class="fixed bottom-0 w-full z-50 bg-white border-t md:hidden h-16 flex justify-around items-center">
-        <button onclick="showPage('home')" class="text-gray-400 flex flex-col items-center"><i class="fas fa-house-user"></i><span class="text-[8px] uppercase font-bold">Home</span></button>
-        <button onclick="showPage('menu')" class="text-gray-400 flex flex-col items-center"><i class="fas fa-hotdog"></i><span class="text-[8px] uppercase font-bold">Menu</span></button>
-        <button onclick="showPage('rewards')" class="text-gray-400 flex flex-col items-center"><i class="fas fa-trophy"></i><span class="text-[8px] uppercase font-bold">Play</span></button>
-        <button onclick="showPage('auth')" class="text-gray-400 flex flex-col items-center"><i class="fas fa-user"></i><span class="text-[8px] uppercase font-bold">Profile</span></button>
-    </nav>
-
-    <!-- Custom Pancakes Modal -->
-    <div id="custom-modal" class="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm items-center justify-center p-4">
-        <div class="bg-white w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl">
-            <div class="p-8">
-                <h2 class="text-2xl font-brand text-amber-900 mb-6">Build Your Stack</h2>
-                <div class="space-y-6">
-                    <div>
-                        <p class="text-[10px] font-bold uppercase text-amber-500 mb-3 tracking-widest">Pancake Style</p>
-                        <div class="grid grid-cols-2 gap-3">
-                            <button onclick="setCustomBase('American Fluffy', 8)" class="base-option p-4 border-2 rounded-2xl text-sm font-bold border-amber-500 bg-amber-50 text-amber-900">American Fluffy</button>
-                            <button onclick="setCustomBase('French Crepe', 7)" class="base-option p-4 border-2 rounded-2xl text-sm font-bold border-gray-100 text-gray-500">French Crepe</button>
-                        </div>
-                    </div>
-                    <div>
-                        <p class="text-[10px] font-bold uppercase text-amber-500 mb-3 tracking-widest">Toppings (+£1.50 ea)</p>
-                        <div class="grid grid-cols-3 gap-2" id="topping-list"></div>
-                    </div>
+    <!-- Public Full Screen Status Dashboard -->
+    <main id="page-status" class="page min-h-screen">
+        <div class="h-full px-6 flex flex-col">
+            <div class="flex justify-between items-end mb-8">
+                <div>
+                    <h1 class="text-6xl font-brand text-amber-500 uppercase">Live Kitchen</h1>
+                    <p class="text-gray-400 font-bold uppercase tracking-[0.5em] text-sm">Order Fulfillment Board</p>
                 </div>
-                <div class="mt-8 border-t pt-6 flex justify-between items-center">
-                    <p class="text-2xl font-brand text-amber-600" id="custom-total-display">£8.00</p>
-                    <div class="flex gap-2">
-                        <button onclick="closeCustomModal()" class="px-4 py-4 text-gray-400 font-bold uppercase text-xs">Cancel</button>
-                        <button onclick="addCustomToCart()" class="bg-amber-500 text-white px-8 py-4 rounded-2xl font-bold hover:bg-amber-600 transition shadow-lg">Add to Cart</button>
+                <div class="text-right flex flex-col items-end gap-2">
+                    <p id="live-clock" class="text-4xl font-mono text-white mb-1">00:00:00</p>
+                    <div class="flex gap-4">
+                        <button onclick="toggleFullScreen()" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-xs text-white uppercase font-bold transition">
+                            <i class="fas fa-expand"></i> <span id="fs-btn-text">Maximize</span>
+                        </button>
+                        <button onclick="showPage('home')" class="text-xs text-gray-500 hover:text-white uppercase font-bold py-2">Exit Display</button>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Admin: Create User Modal -->
-    <div id="user-modal" class="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl">
-            <h2 class="text-2xl font-brand text-amber-900 mb-6">Create Staff User</h2>
-            <form id="create-user-form" class="space-y-4">
-                <input type="email" id="new-user-email" placeholder="Email" required class="w-full p-4 bg-amber-50 rounded-2xl outline-none">
-                <input type="password" id="new-user-pass" placeholder="Password" required class="w-full p-4 bg-amber-50 rounded-2xl outline-none">
-                <div class="flex items-center gap-2 p-2">
-                    <input type="checkbox" id="new-user-admin" class="w-5 h-5 accent-amber-500 cursor-pointer">
-                    <label for="new-user-admin" class="text-sm font-bold text-amber-800 cursor-pointer">Assign Admin Privileges</label>
+            
+            <div class="grid grid-cols-2 gap-8 flex-grow pb-12">
+                <!-- PREPARING SECTION -->
+                <div class="status-card p-10 flex flex-col border-t-8 border-amber-500">
+                    <div class="flex items-center gap-4 mb-10 pb-6 border-b border-white/10">
+                        <i class="fas fa-utensils text-4xl text-amber-500 status-pulse"></i>
+                        <h2 class="text-5xl font-brand">Cooking</h2>
+                    </div>
+                    <div class="flex-grow">
+                        <table class="w-full text-left">
+                            <tbody id="full-preparing-list" class="text-4xl space-y-4">
+                                <!-- Dynamic Content -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="flex gap-2 pt-4">
-                    <button type="button" onclick="closeUserModal()" class="flex-1 py-4 text-gray-400 font-bold uppercase text-xs">Cancel</button>
-                    <button type="submit" class="flex-1 bg-amber-600 text-white py-4 rounded-2xl font-bold uppercase text-xs tracking-widest">Create User</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
-    <!-- Sidebar Cart -->
-    <div id="cart-sidebar" class="fixed inset-y-0 right-0 w-full sm:w-80 bg-white shadow-2xl z-[60] transform translate-x-full transition-transform duration-300 p-6 flex flex-col">
+                <!-- READY SECTION -->
+                <div class="status-card p-10 flex flex-col border-t-8 border-green-500">
+                    <div class="flex items-center gap-4 mb-10 pb-6 border-b border-white/10">
+                        <i class="fas fa-bell text-4xl text-green-500"></i>
+                        <h2 class="text-5xl font-brand">Pick Up</h2>
+                    </div>
+                    <div class="flex-grow">
+                        <table class="w-full text-left">
+                            <tbody id="full-ready-list" class="text-4xl space-y-4 text-green-400">
+                                <!-- Dynamic Content -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center text-gray-600 text-sm py-4">
+                &copy; Perfect Pancakes System - Automated Refresh Active
+            </div>
+        </div>
+    </main>
+
+    <!-- Side Overlays (Cart, Modals) -->
+    <div id="cart-sidebar" class="fixed inset-y-0 right-0 w-full sm:w-80 bg-white shadow-2xl z-[60] transform translate-x-full transition-transform duration-300 p-6 flex flex-col text-amber-950">
         <div class="flex justify-between items-center mb-8">
             <h2 class="text-xl font-brand">Your Stack</h2>
             <button onclick="toggleCart()"><i class="fas fa-times"></i></button>
@@ -136,15 +144,19 @@
         </div>
     </div>
 
-    <!-- Pages -->
+    <!-- Home Page -->
     <main id="page-home" class="page active relative hero-gradient flex items-center justify-center text-white">
         <div class="text-center px-6">
-            <h1 class="text-5xl md:text-7xl font-brand mb-4">Golden Fluffy Bliss</h1>
-            <p class="text-xl mb-8">Crafting the perfect pancake experience.</p>
-            <button onclick="showPage('menu')" class="bg-amber-500 px-10 py-5 rounded-full font-bold text-xl shadow-xl">Order Your Stack</button>
+            <h1 class="text-5xl md:text-8xl font-brand mb-4">Perfect Pancakes</h1>
+            <p class="text-xl md:text-2xl mb-12 opacity-80">Fresh. Fluffy. Delivered in real-time.</p>
+            <div class="flex flex-col md:flex-row gap-6 justify-center">
+                <button onclick="showPage('menu')" class="bg-amber-500 px-12 py-6 rounded-full font-bold text-xl shadow-2xl hover:bg-amber-400 transition transform hover:-translate-y-1">Place Order</button>
+                <button onclick="showPage('status')" class="bg-white/10 backdrop-blur-xl px-12 py-6 rounded-full font-bold text-xl border border-white/30 hover:bg-white/20 transition">Kitchen Board</button>
+            </div>
         </div>
     </main>
 
+    <!-- Menu Page -->
     <main id="page-menu" class="page">
         <div class="max-w-7xl mx-auto px-4 py-12">
             <h2 class="text-3xl font-brand text-center mb-12">The Pancake Pantry</h2>
@@ -152,6 +164,7 @@
         </div>
     </main>
 
+    <!-- Auth Page -->
     <main id="page-auth" class="page flex items-center justify-center">
         <div class="max-w-md w-full p-8 bg-white rounded-[2.5rem] shadow-xl border">
             <div class="flex mb-8 border-b">
@@ -161,7 +174,7 @@
             <form id="auth-form" class="space-y-4">
                 <input type="email" id="auth-email" required class="w-full p-4 bg-amber-50 rounded-2xl outline-none" placeholder="Email">
                 <input type="password" id="auth-pass" required class="w-full p-4 bg-amber-50 rounded-2xl outline-none" placeholder="Password">
-                <button type="submit" id="auth-submit-btn" class="w-full bg-amber-500 text-white py-4 rounded-2xl font-brand uppercase shadow-lg">Submit</button>
+                <button type="submit" id="auth-submit-btn" class="w-full bg-amber-500 text-white py-4 rounded-2xl font-brand uppercase shadow-lg">Login</button>
             </form>
             <div id="logout-section" class="hidden text-center">
                 <p class="mb-4">Logged in as <span id="user-display" class="font-bold"></span></p>
@@ -170,27 +183,14 @@
         </div>
     </main>
 
-    <main id="page-rewards" class="page bg-amber-950 text-white py-12">
-        <div class="max-w-4xl mx-auto px-4 text-center">
-            <h2 class="text-3xl font-brand mb-4 text-amber-400">Pancake Catcher</h2>
-            <p class="mb-8 opacity-60">Catch 10 pancakes to earn a discount!</p>
-            <div id="game-container" onclick="startGame()">
-                <div id="game-player">🍽️</div>
-                <div id="game-msg" class="absolute inset-0 flex items-center justify-center bg-black/70 z-10">
-                    <p class="font-brand text-xl">Tap to Catch Pancakes!</p>
-                </div>
-            </div>
-            <div id="score-display" class="mt-4 font-brand text-4xl text-amber-400">0 / 10</div>
-        </div>
-    </main>
-
+    <!-- Admin Console -->
     <main id="page-admin" class="page bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 py-12">
             <div class="flex justify-between items-center mb-8">
                 <h2 class="text-3xl font-brand text-amber-900">Kitchen Console</h2>
                 <div class="flex gap-2">
-                    <button onclick="setAdminTab('orders')" id="tab-orders" class="admin-tab px-6 py-2 rounded-xl text-xs font-bold uppercase active">Orders</button>
-                    <button onclick="setAdminTab('users')" id="tab-users" class="admin-tab px-6 py-2 rounded-xl text-xs font-bold uppercase">Staff</button>
+                    <button onclick="setAdminTab('orders')" id="tab-orders" class="admin-tab px-6 py-2 rounded-xl text-xs font-bold uppercase active">Live Orders</button>
+                    <button onclick="setAdminTab('users')" id="tab-users" class="admin-tab px-6 py-2 rounded-xl text-xs font-bold uppercase">Staff Hub</button>
                 </div>
             </div>
 
@@ -199,27 +199,23 @@
                     <thead class="bg-amber-50 border-b">
                         <tr>
                             <th class="p-6 text-xs uppercase text-amber-400">Customer</th>
-                            <th class="p-6 text-xs uppercase text-amber-400">Details</th>
-                            <th class="p-6 text-xs uppercase text-amber-400">Total</th>
-                            <th class="p-6 text-xs uppercase text-amber-400">Action</th>
+                            <th class="p-6 text-xs uppercase text-amber-400">Order Stack</th>
+                            <th class="p-6 text-xs uppercase text-amber-400">Status</th>
+                            <th class="p-6 text-xs uppercase text-amber-400">Control</th>
                         </tr>
                     </thead>
                     <tbody id="admin-orders-body"></tbody>
                 </table>
             </div>
 
-            <div id="admin-users-content" class="hidden space-y-6">
-                <div class="flex justify-between items-center">
-                    <p class="text-gray-400 text-sm">Manage kitchen access and staff accounts.</p>
-                    <button onclick="openUserModal()" class="bg-amber-600 text-white px-6 py-3 rounded-2xl font-bold text-xs uppercase">New User</button>
-                </div>
+            <div id="admin-users-content" class="hidden">
                 <div class="bg-white rounded-3xl shadow-sm border overflow-hidden">
                     <table class="w-full text-left">
                         <thead class="bg-amber-50 border-b">
                             <tr>
-                                <th class="p-6 text-xs uppercase text-amber-400">Email</th>
-                                <th class="p-6 text-xs uppercase text-amber-400">Role</th>
-                                <th class="p-6 text-xs uppercase text-amber-400">Actions</th>
+                                <th class="p-6 text-xs uppercase text-amber-400">User Email</th>
+                                <th class="p-6 text-xs uppercase text-amber-400">Access Level</th>
+                                <th class="p-6 text-xs uppercase text-amber-400">Action</th>
                             </tr>
                         </thead>
                         <tbody id="admin-users-body"></tbody>
@@ -235,30 +231,105 @@
         let authMode = 'login';
         let cart = [];
         let currentAdminTab = 'orders';
+        let statusInterval = null;
 
         const pancakes = [
-            { id: 101, name: "Build Your Own", price: 8, desc: "Design your custom stack from scratch.", img: "https://images.unsplash.com/photo-1543339494-b4cd717eb2d5?w=400", isCustom: true },
-            { id: 1, name: "Lemon & Sugar Crepe", price: 11, desc: "Classic French thin crepes with organic zest.", img: "https://images.unsplash.com/photo-1519676867240-f03562e64548?w=400" },
-            { id: 2, name: "Classic Maple Stack", price: 12, desc: "Five fluffy pancakes with Vermont syrup.", img: "https://images.unsplash.com/photo-1528207776546-365bb710ee93?w=400" },
-            { id: 3, name: "Berry Burst", price: 15, desc: "Loaded with fresh forest fruits and cream.", img: "https://images.unsplash.com/photo-1567620905732-2d1ec7bb7445?w=400" }
+            { id: 1, name: "Classic Maple Stack", price: 12, desc: "Five fluffy pancakes with premium Vermont maple syrup.", img: "https://images.unsplash.com/photo-1528207776546-365bb710ee93?w=400" },
+            { id: 2, name: "Lemon Sugar Crepe", price: 11, desc: "Classic French thin crepes with organic zest and cane sugar.", img: "https://images.unsplash.com/photo-1519676867240-f03562e64548?w=400" },
+            { id: 3, name: "Berry Explosion", price: 15, desc: "Loaded with fresh forest berries and vanilla chantilly cream.", img: "https://images.unsplash.com/photo-1567620905732-2d1ec7bb7445?w=400" }
         ];
 
-        const toppings = ["Maple Syrup", "Blueberries", "Bacon", "Nutella", "Bananas", "Cream", "Strawberries"];
-        let currentCustom = { base: 'American Fluffy', basePrice: 8, toppings: [] };
+        // Full Screen Handler with Fallback
+        function toggleFullScreen() {
+            const elem = document.getElementById('page-status');
+            const btnText = document.getElementById('fs-btn-text');
+
+            // Attempt native Fullscreen API first
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                const requestMethod = elem.requestFullscreen || elem.webkitRequestFullscreen || elem.msRequestFullscreen;
+                
+                if (requestMethod) {
+                    requestMethod.call(elem).catch(err => {
+                        console.warn("Fullscreen API failed, falling back to pseudo-fullscreen");
+                        togglePseudoFullscreen(elem, btnText);
+                    });
+                } else {
+                    togglePseudoFullscreen(elem, btnText);
+                }
+            } else {
+                const exitMethod = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+                if (exitMethod) exitMethod.call(document);
+                togglePseudoFullscreen(elem, btnText, true); // Ensure pseudo is cleared
+            }
+        }
+
+        function togglePseudoFullscreen(elem, btnText, forceExit = false) {
+            if (forceExit || elem.classList.contains('pseudo-fullscreen')) {
+                elem.classList.remove('pseudo-fullscreen');
+                btnText.innerText = "Maximize";
+            } else {
+                elem.classList.add('pseudo-fullscreen');
+                btnText.innerText = "Minimize";
+            }
+        }
+
+        async function setupAdminAccount() {
+            const adminEmail = "sabrina@ppankakes.co.uk";
+            const adminPass = "Admin@123!";
+            try {
+                await fetch(`${API_URL}/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: adminEmail, password: adminPass, isAdmin: true })
+                });
+            } catch (e) { console.log("Admin account check complete."); }
+        }
 
         function showPage(pageId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(`page-${pageId}`).classList.add('active');
-            updateNav();
-            if(pageId === 'admin') loadAdminData();
-            if(pageId === 'auth' && currentUser) {
-                document.getElementById('auth-form').classList.add('hidden');
-                document.getElementById('logout-section').classList.remove('hidden');
-                document.getElementById('user-display').innerText = currentUser.email;
-            } else if (pageId === 'auth') {
-                document.getElementById('auth-form').classList.remove('hidden');
-                document.getElementById('logout-section').classList.add('hidden');
+            
+            if(pageId === 'status') {
+                loadPublicStatus();
+                if(!statusInterval) statusInterval = setInterval(loadPublicStatus, 5000);
+            } else {
+                if(statusInterval) { clearInterval(statusInterval); statusInterval = null; }
+                const elem = document.getElementById('page-status');
+                elem.classList.remove('pseudo-fullscreen');
+                if(document.fullscreenElement) document.exitFullscreen();
             }
+            
+            if(pageId === 'admin') loadAdminData();
+            updateNav();
+        }
+
+        setInterval(() => {
+            const clock = document.getElementById('live-clock');
+            if(clock) clock.innerText = new Date().toLocaleTimeString();
+        }, 1000);
+
+        async function loadPublicStatus() {
+            try {
+                const res = await fetch(`${API_URL}/admin/orders`);
+                const orders = await res.json();
+                
+                const preparing = orders.filter(o => o.status === 'pending').slice(-6);
+                const ready = orders.filter(o => o.status === 'cooked').slice(-6);
+
+                document.getElementById('full-preparing-list').innerHTML = preparing.map(o => `
+                    <tr class="border-b border-white/5">
+                        <td class="py-6 font-bold tracking-tighter">${o.userEmail.split('@')[0].toUpperCase()}</td>
+                        <td class="py-6 text-right"><span class="text-amber-500 animate-pulse text-2xl font-mono">COOKING...</span></td>
+                    </tr>
+                `).join('');
+
+                document.getElementById('full-ready-list').innerHTML = ready.map(o => `
+                    <tr class="border-b border-white/5">
+                        <td class="py-6 font-bold tracking-tighter">${o.userEmail.split('@')[0].toUpperCase()}</td>
+                        <td class="py-6 text-right"><span class="bg-green-500 text-black px-4 py-1 rounded text-2xl font-brand">READY</span></td>
+                    </tr>
+                `).join('');
+            } catch (err) { console.error("Status Board Fetch Error"); }
         }
 
         function updateNav() {
@@ -266,80 +337,26 @@
             if(!group) return;
             group.innerHTML = currentUser ? `
                 <div class="flex items-center gap-4">
-                    ${currentUser.isAdmin ? `<button onclick="showPage('admin')" class="text-amber-600 font-bold">Admin</button>` : ''}
-                    <button onclick="showPage('auth')" class="text-gray-400">${currentUser.email}</button>
+                    ${currentUser.isAdmin ? `<button onclick="showPage('admin')" class="text-amber-600 font-bold">Kitchen Console</button>` : ''}
+                    <button onclick="showPage('auth')" class="text-gray-400 font-bold">${currentUser.email.split('@')[0]}</button>
                 </div>
-            ` : `<button onclick="showPage('auth')" class="bg-amber-600 text-white px-4 py-1 rounded-full text-[10px] font-bold">JOIN CLUB</button>`;
+            ` : `<button onclick="showPage('auth')" class="bg-amber-600 text-white px-6 py-2 rounded-full text-xs font-bold uppercase">Sign In</button>`;
         }
 
-        // Custom Stack Logic
-        function openCustomModal() {
-            currentCustom = { base: 'American Fluffy', basePrice: 8, toppings: [] };
-            document.getElementById('custom-modal').classList.add('active');
-            renderToppings();
-            updateCustomUI();
-        }
-        function closeCustomModal() { document.getElementById('custom-modal').classList.remove('active'); }
-        function setCustomBase(name, price) {
-            currentCustom.base = name;
-            currentCustom.basePrice = price;
-            updateCustomUI();
-        }
-        function toggleTopping(t) {
-            const i = currentCustom.toppings.indexOf(t);
-            if(i > -1) currentCustom.toppings.splice(i, 1);
-            else currentCustom.toppings.push(t);
-            renderToppings();
-            updateCustomUI();
-        }
-        function renderToppings() {
-            document.getElementById('topping-list').innerHTML = toppings.map(t => `
-                <button onclick="toggleTopping('${t}')" class="p-2 border-2 rounded-xl text-[10px] font-bold uppercase transition ${currentCustom.toppings.includes(t) ? 'border-amber-500 bg-amber-50 text-amber-900' : 'border-gray-100 text-gray-400'}">
-                    ${t}
-                </button>
-            `).join('');
-        }
-        function updateCustomUI() {
-            const total = currentCustom.basePrice + (currentCustom.toppings.length * 1.5);
-            document.getElementById('custom-total-display').innerText = `£${total.toFixed(2)}`;
-            document.querySelectorAll('.base-option').forEach(b => {
-                b.classList.toggle('border-amber-500', b.innerText.includes(currentCustom.base));
-                b.classList.toggle('bg-amber-50', b.innerText.includes(currentCustom.base));
-            });
-        }
-        function addCustomToCart() {
-            const total = currentCustom.basePrice + (currentCustom.toppings.length * 1.5);
-            cart.push({
-                id: Date.now(),
-                name: `Custom ${currentCustom.base}`,
-                price: total,
-                desc: currentCustom.toppings.length ? `Toppings: ${currentCustom.toppings.join(', ')}` : 'Plain stack',
-                isCustom: true,
-                customDetails: { base: currentCustom.base, toppings: [...currentCustom.toppings] }
-            });
-            updateCart();
-            closeCustomModal();
-            toggleCart();
-        }
-
-        // Cart Logic
-        function toggleCart() { document.getElementById('cart-sidebar').classList.toggle('translate-x-full'); }
         function addToCart(id) {
             const p = pancakes.find(x => x.id === id);
-            if(p.isCustom) return openCustomModal();
             cart.push({...p});
             updateCart();
             toggleCart();
         }
+
+        function toggleCart() { document.getElementById('cart-sidebar').classList.toggle('translate-x-full'); }
+
         function updateCart() {
             document.getElementById('cart-count').innerText = cart.length;
             document.getElementById('cart-items').innerHTML = cart.map((i, idx) => `
                 <div class="p-4 bg-amber-50 rounded-2xl flex justify-between">
-                    <div>
-                        <p class="font-bold text-sm">${i.name}</p>
-                        <p class="text-[10px] text-gray-400">${i.desc}</p>
-                        <p class="text-xs font-bold text-amber-600">£${i.price.toFixed(2)}</p>
-                    </div>
+                    <div><p class="font-bold text-sm">${i.name}</p></div>
                     <button onclick="cart.splice(${idx},1);updateCart();" class="text-gray-300"><i class="fas fa-trash"></i></button>
                 </div>
             `).join('');
@@ -349,163 +366,82 @@
 
         async function processOrder() {
             if(!currentUser) return showPage('auth');
-            const btn = document.getElementById('checkout-btn');
-            btn.disabled = true;
-            btn.innerText = "Placing Order...";
-            
             try {
                 await fetch(`${API_URL}/orders`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        userId: currentUser.id,
-                        userEmail: currentUser.email,
-                        items: cart,
-                        total: cart.reduce((a,b) => a+b.price, 0),
+                        userId: currentUser.id, userEmail: currentUser.email,
+                        items: cart, total: cart.reduce((a,b) => a+b.price, 0),
                         status: 'pending'
                     })
                 });
-                cart = [];
-                updateCart();
-                toggleCart();
-                alert("Order placed successfully!");
+                cart = []; updateCart(); toggleCart();
+                alert("Order Sent to Kitchen!");
+                showPage('status');
             } catch(e) { alert("Checkout failed."); }
-            finally { btn.disabled = false; btn.innerText = "Order Now"; }
-        }
-
-        // Admin Management
-        function setAdminTab(tab) {
-            currentAdminTab = tab;
-            document.querySelectorAll('.admin-tab').forEach(b => {
-                b.classList.toggle('active', b.id === `tab-${tab}`);
-            });
-            document.getElementById('admin-orders-content').classList.toggle('hidden', tab !== 'orders');
-            document.getElementById('admin-users-content').classList.toggle('hidden', tab !== 'users');
-            loadAdminData();
         }
 
         async function loadAdminData() {
-            try {
-                if (currentAdminTab === 'orders') {
-                    const res = await fetch(`${API_URL}/admin/orders`);
-                    const orders = await res.json();
-                    document.getElementById('admin-orders-body').innerHTML = orders.slice().reverse().map(o => `
-                        <tr class="border-b ${o.status === 'cooked' ? 'bg-green-50/50 opacity-60' : ''}">
-                            <td class="p-6 text-sm font-bold">${o.userEmail}</td>
-                            <td class="p-6">
-                                ${o.items.map(i => `
-                                    <div class="mb-1">
-                                        <span class="text-xs font-bold block">${i.name}</span>
-                                        ${i.isCustom ? `<span class="text-[9px] text-amber-600 uppercase font-bold bg-amber-100 px-1 rounded">Base: ${i.customDetails.base} | ${i.customDetails.toppings.join(', ')}</span>` : ''}
-                                    </div>
-                                `).join('')}
-                            </td>
-                            <td class="p-6 font-bold text-amber-700">£${o.total.toFixed(2)}</td>
-                            <td class="p-6">
-                                ${o.status === 'pending' ? 
-                                    `<button onclick="completeOrder('${o.id}')" class="bg-amber-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold uppercase">Cooked</button>` : 
-                                    `<span class="text-green-600 font-bold text-xs"><i class="fas fa-check"></i> Done</span>`
-                                }
-                            </td>
-                        </tr>
-                    `).join('') || '<tr><td colspan="4" class="p-10 text-center text-gray-400">No active orders</td></tr>';
-                } else {
-                    const res = await fetch(`${API_URL}/admin/users`);
-                    const users = await res.json();
-                    document.getElementById('admin-users-body').innerHTML = users.map(u => `
-                        <tr class="border-b">
-                            <td class="p-6 text-sm font-medium">${u.email}</td>
-                            <td class="p-6">
-                                <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase ${u.isAdmin ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}">
-                                    ${u.isAdmin ? 'Administrator' : 'Customer'}
-                                </span>
-                            </td>
-                            <td class="p-6">
-                                ${!u.isAdmin ? `<button onclick="promoteUser('${u.id}')" class="text-purple-600 font-bold text-[10px] uppercase hover:underline">Make Admin</button>` : '<span class="text-gray-300 text-[10px] uppercase">Default Staff</span>'}
-                            </td>
-                        </tr>
-                    `).join('') || '<tr><td colspan="3" class="p-10 text-center text-gray-400">No users found</td></tr>';
-                }
-            } catch (err) {
-                console.error("Failed to load admin data:", err);
+            if (currentAdminTab === 'orders') {
+                const res = await fetch(`${API_URL}/admin/orders`);
+                const orders = await res.json();
+                document.getElementById('admin-orders-body').innerHTML = orders.slice().reverse().map(o => `
+                    <tr class="border-b ${o.status === 'cooked' ? 'opacity-40' : ''}">
+                        <td class="p-6 font-bold">${o.userEmail}</td>
+                        <td class="p-6 text-xs text-gray-500">${o.items.map(i => i.name).join(', ')}</td>
+                        <td class="p-6"><span class="uppercase font-bold text-[10px] px-2 py-1 rounded ${o.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}">${o.status}</span></td>
+                        <td class="p-6">
+                            ${o.status === 'pending' ? `<button onclick="updateStatus('${o.id}', 'cooked')" class="bg-amber-600 text-white px-4 py-2 rounded-lg text-xs font-bold">READY</button>` : 'COMPLETED'}
+                        </td>
+                    </tr>
+                `).join('');
+            } else {
+                const res = await fetch(`${API_URL}/admin/users`);
+                const users = await res.json();
+                document.getElementById('admin-users-body').innerHTML = users.map(u => `
+                    <tr class="border-b">
+                        <td class="p-6 font-medium">${u.email}</td>
+                        <td class="p-6"><span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase ${u.isAdmin ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}">${u.isAdmin ? 'Admin' : 'Customer'}</span></td>
+                        <td class="p-6">${!u.isAdmin ? `<button onclick="promote('${u.id}')" class="text-blue-600 font-bold text-xs uppercase">Promote</button>` : '--'}</td>
+                    </tr>
+                `).join('');
             }
         }
 
-        async function completeOrder(id) {
+        async function updateStatus(id, s) {
             await fetch(`${API_URL}/orders/${id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: 'cooked' })
+                body: JSON.stringify({ status: s })
             });
             loadAdminData();
         }
 
-        // Staff Management
-        function openUserModal() { document.getElementById('user-modal').classList.add('active'); }
-        function closeUserModal() { document.getElementById('user-modal').classList.remove('active'); }
-
-        document.getElementById('create-user-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('new-user-email').value;
-            const password = document.getElementById('new-user-pass').value;
-            const isAdmin = document.getElementById('new-user-admin').checked;
-
-            try {
-                const res = await fetch(`${API_URL}/signup`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password, isAdmin })
-                });
-                if(res.ok) {
-                    alert("Staff member created successfully!");
-                    closeUserModal();
-                    loadAdminData();
-                    document.getElementById('create-user-form').reset();
-                } else {
-                    const error = await res.json();
-                    alert("Error: " + error.message);
-                }
-            } catch(err) { alert("Failed to connect to server."); }
-        });
-
-        async function promoteUser(id) {
-            try {
-                const res = await fetch(`${API_URL}/admin/users/${id}/promote`, { 
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                if (res.ok) {
-                    loadAdminData();
-                } else {
-                    alert("Promotion failed.");
-                }
-            } catch (err) {
-                alert("Could not reach server.");
-            }
+        async function promote(id) {
+            await fetch(`${API_URL}/admin/users/${id}/promote`, { method: 'POST' });
+            loadAdminData();
         }
 
-        // Auth form
+        function setAdminTab(t) {
+            currentAdminTab = t;
+            document.querySelectorAll('.admin-tab').forEach(b => b.classList.toggle('active', b.id === `tab-${t}`));
+            document.getElementById('admin-orders-content').classList.toggle('hidden', t !== 'orders');
+            document.getElementById('admin-users-content').classList.toggle('hidden', t !== 'users');
+            loadAdminData();
+        }
+
         document.getElementById('auth-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('auth-email').value;
-            const password = document.getElementById('auth-pass').value;
             const endpoint = authMode === 'login' ? '/login' : '/signup';
-            
-            try {
-                const res = await fetch(`${API_URL}${endpoint}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                const data = await res.json();
-                if(res.ok) {
-                    currentUser = data;
-                    localStorage.setItem('pancake_user', JSON.stringify(data));
-                    showPage('home');
-                } else alert(data.message);
-            } catch (err) {
-                alert("Login failed. Server might be down.");
-            }
+            const res = await fetch(`${API_URL}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: document.getElementById('auth-email').value, password: document.getElementById('auth-pass').value })
+            });
+            const data = await res.json();
+            if(res.ok) { currentUser = data; localStorage.setItem('pancake_user', JSON.stringify(data)); showPage('home'); }
+            else alert(data.message);
         });
 
         function logout() { currentUser = null; localStorage.removeItem('pancake_user'); showPage('auth'); }
@@ -515,46 +451,14 @@
             document.getElementById('auth-submit-btn').innerText = m === 'login' ? 'Login' : 'Sign Up';
         }
 
-        // Simple Game (Condensed)
-        let gameActive = false, score = 0;
-        function startGame() {
-            if(gameActive) return; gameActive = true; score = 0;
-            document.getElementById('game-msg').classList.add('hidden');
-            document.getElementById('score-display').innerText = "0 / 10";
-            const loop = setInterval(() => {
-                if(!gameActive) return clearInterval(loop);
-                const p = document.createElement('div');
-                p.className = 'game-obj'; p.innerText = '🥞';
-                p.style.left = Math.random() * 80 + '%'; p.style.top = '-50px';
-                document.getElementById('game-container').appendChild(p);
-                let top = -50;
-                const fall = setInterval(() => {
-                    top += 5; p.style.top = top + 'px';
-                    const pr = document.getElementById('game-player').getBoundingClientRect();
-                    const sr = p.getBoundingClientRect();
-                    if(sr.bottom > pr.top && sr.left < pr.right && sr.right > pr.left) {
-                        score++; document.getElementById('score-display').innerText = score + " / 10";
-                        p.remove(); clearInterval(fall);
-                        if(score >= 10) { 
-                            gameActive = false; 
-                            alert("Won! You've earned a 'Game Master' discount code: STACK10");
-                            document.getElementById('game-msg').classList.remove('hidden');
-                        }
-                    }
-                    if(top > 400) { p.remove(); clearInterval(fall); }
-                }, 20);
-            }, 1000);
-        }
-
         window.onload = () => {
+            setupAdminAccount();
             document.getElementById('pancake-grid').innerHTML = pancakes.map(p => `
-                <div class="bg-white p-6 rounded-[2rem] border hover:shadow-xl transition">
+                <div class="bg-white p-6 rounded-[2.5rem] border hover:shadow-xl transition flex flex-col">
                     <img src="${p.img}" class="w-full h-48 object-cover rounded-2xl mb-4">
-                    <h3 class="font-bold text-xl mb-2">${p.name}</h3>
-                    <p class="text-xs text-gray-400 mb-6">${p.desc}</p>
-                    <button onclick="addToCart(${p.id})" class="w-full py-4 ${p.isCustom ? 'bg-amber-100 text-amber-600' : 'bg-amber-950 text-white'} rounded-2xl font-bold uppercase text-[10px] tracking-widest">
-                        ${p.isCustom ? 'Build Yours' : 'Order'} £${p.price.toFixed(2)}
-                    </button>
+                    <h3 class="font-bold text-xl mb-1">${p.name}</h3>
+                    <p class="text-xs text-gray-400 mb-6 flex-grow">${p.desc}</p>
+                    <button onclick="addToCart(${p.id})" class="w-full py-4 bg-amber-950 text-white rounded-2xl font-bold uppercase text-[10px] tracking-widest">Add to Order £${p.price}</button>
                 </div>
             `).join('');
             updateNav();
