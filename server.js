@@ -1,141 +1,126 @@
 const express = require('express');
-const fs = require('fs');
 const cors = require('cors');
-const path = require('path');
+const bodyParser = require('body-parser');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DATA_FILE = path.join(__dirname, 'db.json');
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(bodyParser.json());
 
-// Initialize Data File if it doesn't exist
-const initDB = () => {
-    if (!fs.existsSync(DATA_FILE)) {
-        const initialData = {
-            users: [],
-            orders: [],
-            rewards: []
-        };
-        fs.writeFileSync(DATA_FILE, JSON.stringify(initialData, null, 2));
-    }
-};
+// In-Memory Database (Reset on server restart)
+let users = [];
+let orders = [];
 
-// Helper to read/write data
-const readData = () => {
-    try {
-        const content = fs.readFileSync(DATA_FILE, 'utf8');
-        return JSON.parse(content);
-    } catch (err) {
-        return { users: [], orders: [], rewards: [] };
-    }
-};
+// Helper: Generate a simple "token"
+const generateToken = () => crypto.randomBytes(20).toString('hex');
 
-const saveData = (data) => {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-};
+// --- AUTH ROUTES ---
 
-// --- ROUTES ---
-
-// 1. Sign Up
+// Signup
 app.post('/signup', (req, res) => {
     const { email, password } = req.body;
-    const data = readData();
-    
-    if (data.users.find(u => u.email === email)) {
+    if (!email || !password) return res.status(400).json({ message: "Email and password required" });
+
+    if (users.find(u => u.email === email)) {
         return res.status(400).json({ message: "User already exists" });
     }
 
-    const newUser = { 
-        id: Date.now().toString(), 
-        email: email, 
-        password: password 
+    const newUser = {
+        id: crypto.randomUUID(),
+        email,
+        password, // In production, hash this!
+        isAdmin: users.length === 0, // First user is automatically Admin
+        token: generateToken()
     };
-    
-    data.users.push(newUser);
-    saveData(data);
-    res.status(201).json({ message: "User created", user: { email: newUser.email, id: newUser.id } });
+
+    users.push(newUser);
+    const { password: _, ...userWithoutPass } = newUser;
+    res.json(userWithoutPass);
 });
 
-// 2. Login
+// Login
 app.post('/login', (req, res) => {
     const { email, password } = req.body;
-    
-    // Hardcoded Admin Check
-    if (email === "rohanwest20@gmail.com" && password === "Ewanandlam100") {
-        return res.json({ email, id: "admin-1", isAdmin: true });
-    }
+    const user = users.find(u => u.email === email && u.password === password);
 
-    const data = readData();
-    const user = data.users.find(u => u.email === email && u.password === password);
-    
-    if (!user) {
-        return res.status(401).json({ message: "Invalid email or password" });
-    }
-    res.json({ email: user.email, id: user.id, isAdmin: false });
+    if (!user) return res.status(401).json({ message: "Invalid credentials" });
+
+    user.token = generateToken(); // Refresh token on login
+    const { password: _, ...userWithoutPass } = user;
+    res.json(userWithoutPass);
 });
 
-// 3. Orders - Save new order
+// --- ORDER ROUTES ---
+
+// Create Order
 app.post('/orders', (req, res) => {
-    const order = req.body;
-    const data = readData();
+    const { userId, userEmail, items, total } = req.body;
     
-    // Add unique ID if not present
-    if (!order.id) order.id = "ORD-" + Date.now();
-    
-    data.orders.push(order);
-    saveData(data);
-    res.status(201).json(order);
+    const newOrder = {
+        id: crypto.randomUUID(),
+        userId,
+        userEmail,
+        items,
+        total,
+        status: 'pending', // Initial status
+        createdAt: new Date()
+    };
+
+    orders.push(newOrder);
+    res.status(201).json(newOrder);
 });
 
-// 4. Orders - Admin get all
-app.get('/admin/orders', (req, res) => {
-    const data = readData();
-    res.json(data.orders || []);
-});
-
-// 5. Rewards - Save new reward
-app.post('/rewards', (req, res) => {
-    const reward = req.body; 
-    const data = readData();
-    data.rewards.push(reward);
-    saveData(data);
-    res.status(201).json(reward);
-});
-
-// 6. Rewards - Get user rewards
-app.get('/rewards/:userId', (req, res) => {
-    const { userId } = req.params;
-    const data = readData();
-    const userRewards = data.rewards.filter(r => r.userId === userId);
-    res.json(userRewards);
-});
-
-// 7. Rewards - Admin get all
-app.get('/admin/rewards', (req, res) => {
-    const data = readData();
-    res.json(data.rewards);
-});
-
-// 8. Rewards - Redeem
-app.patch('/rewards/:rewardId', (req, res) => {
-    const { rewardId } = req.params;
+// Update Order Status (Requires Admin Check)
+app.patch('/orders/:id', (req, res) => {
+    const { id } = req.params;
     const { status } = req.body;
-    const data = readData();
-    const idx = data.rewards.findIndex(r => r.id === rewardId);
-    
-    if (idx !== -1) {
-        data.rewards[idx].status = status;
-        saveData(data);
-        return res.json(data.rewards[idx]);
+    const authHeader = req.headers.authorization;
+
+    // Basic Token Auth Check
+    const token = authHeader ? authHeader.split(' ')[1] : null;
+    const adminUser = users.find(u => u.token === token && u.isAdmin);
+
+    if (!adminUser) {
+        return res.status(403).json({ message: "Unauthorized. Admin access required." });
     }
-    res.status(404).json({ message: "Reward not found" });
+
+    const order = orders.find(o => o.id === id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    order.status = status;
+    res.json(order);
+});
+
+// --- ADMIN ROUTES ---
+
+// Get All Orders
+app.get('/admin/orders', (req, res) => {
+    // In a production app, you'd verify admin token here too
+    res.json(orders);
+});
+
+// Get All Users
+app.get('/admin/users', (req, res) => {
+    const usersWithoutPass = users.map(({ password, ...u }) => u);
+    res.json(usersWithoutPass);
+});
+
+// Promote User to Admin
+app.post('/admin/users/:id/promote', (req, res) => {
+    const { id } = req.params;
+    const user = users.find(u => u.id === id);
+    if (user) {
+        user.isAdmin = true;
+        return res.json({ message: "User promoted" });
+    }
+    res.status(404).json({ message: "User not found" });
 });
 
 // Start Server
 app.listen(PORT, () => {
-    initDB();
-    console.log(`Server running on port ${PORT}`);
+    console.log(`Pancake Server running on http://localhost:${PORT}`);
+    console.log(`First user to sign up will be the Admin.`);
 });
