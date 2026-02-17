@@ -39,7 +39,6 @@
         #page-status { padding-top: 20px; background-color: #1a1a1a; color: white; }
         .status-card { background: #2a2a2a; border-radius: 1.5rem; }
         
-        /* Pseudo-fullscreen class for environments that block the Fullscreen API */
         .pseudo-fullscreen {
             position: fixed !important;
             top: 0 !important;
@@ -51,7 +50,6 @@
             margin: 0 !important;
         }
 
-        /* Custom Select Styling */
         .status-select {
             appearance: none;
             background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
@@ -64,7 +62,6 @@
 </head>
 <body class="bg-[#fffdfa] text-amber-950">
 
-    <!-- Navigation -->
     <nav class="fixed w-full z-50 bg-white/95 backdrop-blur-md shadow-sm border-b h-20 flex items-center">
         <div class="max-w-7xl mx-auto px-4 w-full flex justify-between items-center">
             <div class="flex items-center gap-3 cursor-pointer" onclick="showPage('home')">
@@ -85,7 +82,6 @@
         </div>
     </nav>
 
-    <!-- Public Full Screen Status Dashboard -->
     <main id="page-status" class="page min-h-screen">
         <div class="h-full px-6 flex flex-col">
             <div class="flex justify-between items-end mb-8">
@@ -105,7 +101,6 @@
             </div>
             
             <div class="grid grid-cols-2 gap-8 flex-grow pb-12">
-                <!-- PREPARING SECTION -->
                 <div class="status-card p-10 flex flex-col border-t-8 border-amber-500">
                     <div class="flex items-center gap-4 mb-10 pb-6 border-b border-white/10">
                         <i class="fas fa-utensils text-4xl text-amber-500 status-pulse"></i>
@@ -113,14 +108,11 @@
                     </div>
                     <div class="flex-grow">
                         <table class="w-full text-left">
-                            <tbody id="full-preparing-list" class="text-4xl space-y-4">
-                                <!-- Dynamic Content -->
-                            </tbody>
+                            <tbody id="full-preparing-list" class="text-4xl space-y-4"></tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- READY SECTION -->
                 <div class="status-card p-10 flex flex-col border-t-8 border-green-500">
                     <div class="flex items-center gap-4 mb-10 pb-6 border-b border-white/10">
                         <i class="fas fa-bell text-4xl text-green-500"></i>
@@ -128,20 +120,14 @@
                     </div>
                     <div class="flex-grow">
                         <table class="w-full text-left">
-                            <tbody id="full-ready-list" class="text-4xl space-y-4 text-green-400">
-                                <!-- Dynamic Content -->
-                            </tbody>
+                            <tbody id="full-ready-list" class="text-4xl space-y-4 text-green-400"></tbody>
                         </table>
                     </div>
                 </div>
             </div>
-            <div class="text-center text-gray-600 text-sm py-4">
-                &copy; Perfect Pancakes System - Automated Refresh Active
-            </div>
         </div>
     </main>
 
-    <!-- Side Overlays (Cart, Modals) -->
     <div id="cart-sidebar" class="fixed inset-y-0 right-0 w-full sm:w-80 bg-white shadow-2xl z-[60] transform translate-x-full transition-transform duration-300 p-6 flex flex-col text-amber-950">
         <div class="flex justify-between items-center mb-8">
             <h2 class="text-xl font-brand">Your Stack</h2>
@@ -154,7 +140,6 @@
         </div>
     </div>
 
-    <!-- Home Page -->
     <main id="page-home" class="page active relative hero-gradient flex items-center justify-center text-white">
         <div class="text-center px-6">
             <h1 class="text-5xl md:text-8xl font-brand mb-4">Perfect Pancakes</h1>
@@ -166,7 +151,6 @@
         </div>
     </main>
 
-    <!-- Menu Page -->
     <main id="page-menu" class="page">
         <div class="max-w-7xl mx-auto px-4 py-12">
             <h2 class="text-3xl font-brand text-center mb-12">The Pancake Pantry</h2>
@@ -174,7 +158,6 @@
         </div>
     </main>
 
-    <!-- Auth Page -->
     <main id="page-auth" class="page flex items-center justify-center">
         <div class="max-w-md w-full p-8 bg-white rounded-[2.5rem] shadow-xl border">
             <div class="flex mb-8 border-b">
@@ -193,7 +176,6 @@
         </div>
     </main>
 
-    <!-- Admin Console -->
     <main id="page-admin" class="page bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 py-12">
             <div class="flex justify-between items-center mb-8">
@@ -249,22 +231,13 @@
             { id: 3, name: "Berry Explosion", price: 15, desc: "Loaded with fresh forest berries and vanilla chantilly cream.", img: "https://images.unsplash.com/photo-1567620905732-2d1ec7bb7445?w=400" }
         ];
 
-        // Full Screen Handler with Fallback
         function toggleFullScreen() {
             const elem = document.getElementById('page-status');
             const btnText = document.getElementById('fs-btn-text');
-
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                 const requestMethod = elem.requestFullscreen || elem.webkitRequestFullscreen || elem.msRequestFullscreen;
-                
-                if (requestMethod) {
-                    requestMethod.call(elem).catch(err => {
-                        console.warn("Fullscreen API failed, falling back to pseudo-fullscreen");
-                        togglePseudoFullscreen(elem, btnText);
-                    });
-                } else {
-                    togglePseudoFullscreen(elem, btnText);
-                }
+                if (requestMethod) requestMethod.call(elem).catch(() => togglePseudoFullscreen(elem, btnText));
+                else togglePseudoFullscreen(elem, btnText);
             } else {
                 const exitMethod = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
                 if (exitMethod) exitMethod.call(document);
@@ -282,32 +255,16 @@
             }
         }
 
-        async function setupAdminAccount() {
-            const adminEmail = "sabrina@ppankakes.co.uk";
-            const adminPass = "Admin@123!";
-            try {
-                await fetch(`${API_URL}/signup`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: adminEmail, password: adminPass, isAdmin: true })
-                });
-            } catch (e) { console.log("Admin account check complete."); }
-        }
-
         function showPage(pageId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(`page-${pageId}`).classList.add('active');
-            
             if(pageId === 'status') {
                 loadPublicStatus();
                 if(!statusInterval) statusInterval = setInterval(loadPublicStatus, 5000);
-            } else {
-                if(statusInterval) { clearInterval(statusInterval); statusInterval = null; }
-                const elem = document.getElementById('page-status');
-                elem.classList.remove('pseudo-fullscreen');
-                if(document.fullscreenElement) document.exitFullscreen();
+            } else if (statusInterval) {
+                clearInterval(statusInterval);
+                statusInterval = null;
             }
-            
             if(pageId === 'admin') loadAdminData();
             updateNav();
         }
@@ -321,24 +278,21 @@
             try {
                 const res = await fetch(`${API_URL}/admin/orders`);
                 const orders = await res.json();
-                
                 const preparing = orders.filter(o => o.status === 'pending').slice(-6);
                 const ready = orders.filter(o => o.status === 'cooked').slice(-6);
-
                 document.getElementById('full-preparing-list').innerHTML = preparing.map(o => `
                     <tr class="border-b border-white/5">
                         <td class="py-6 font-bold tracking-tighter">${o.userEmail.split('@')[0].toUpperCase()}</td>
                         <td class="py-6 text-right"><span class="text-amber-500 animate-pulse text-2xl font-mono">COOKING...</span></td>
                     </tr>
                 `).join('');
-
                 document.getElementById('full-ready-list').innerHTML = ready.map(o => `
                     <tr class="border-b border-white/5">
                         <td class="py-6 font-bold tracking-tighter">${o.userEmail.split('@')[0].toUpperCase()}</td>
                         <td class="py-6 text-right"><span class="bg-green-500 text-black px-4 py-1 rounded text-2xl font-brand">READY</span></td>
                     </tr>
                 `).join('');
-            } catch (err) { console.error("Status Board Fetch Error"); }
+            } catch (err) {}
         }
 
         function updateNav() {
@@ -393,12 +347,11 @@
 
         async function loadAdminData() {
             if (!currentUser || !currentUser.isAdmin) return;
-            
             if (currentAdminTab === 'orders') {
                 const res = await fetch(`${API_URL}/admin/orders`);
                 const orders = await res.json();
                 document.getElementById('admin-orders-body').innerHTML = orders.slice().reverse().map(o => `
-                    <tr class="border-b ${o.status === 'collected' ? 'opacity-30' : ''}">
+                    <tr class="border-b ${o.status === 'collected' ? 'bg-gray-50 opacity-60' : ''}">
                         <td class="p-6 font-bold text-sm">${o.userEmail}</td>
                         <td class="p-6 text-xs text-gray-400 italic">${o.items.map(i => i.name).join(', ')}</td>
                         <td class="p-6">
@@ -410,7 +363,7 @@
                         <td class="p-6">
                             <select 
                                 onchange="updateStatus('${o.id}', this.value)" 
-                                class="status-select bg-white border border-gray-200 rounded-lg text-xs font-bold py-2 px-3 outline-none focus:border-amber-500 transition cursor-pointer"
+                                class="status-select bg-white border border-gray-200 rounded-xl text-xs font-bold py-3 px-4 outline-none focus:ring-2 focus:ring-amber-500 transition cursor-pointer"
                             >
                                 <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>Cooking</option>
                                 <option value="cooked" ${o.status === 'cooked' ? 'selected' : ''}>Ready</option>
@@ -432,24 +385,21 @@
             }
         }
 
-        async function updateStatus(id, s) {
+        async function updateStatus(id, newStatus) {
             if (!currentUser || !currentUser.isAdmin) {
-                alert("Unauthorized: Kitchen staff access only.");
+                alert("Unauthorized staff only.");
                 return;
             }
             try {
                 const res = await fetch(`${API_URL}/orders/${id}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: s })
+                    body: JSON.stringify({ status: newStatus })
                 });
-                if (res.ok) {
-                    loadAdminData();
-                } else {
-                    alert("Status update failed on server.");
-                }
+                if (res.ok) loadAdminData();
+                else alert("Update failed on server.");
             } catch (err) {
-                console.error("Update failed", err);
+                alert("Network error updating status.");
             }
         }
 
@@ -469,14 +419,16 @@
         document.getElementById('auth-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const endpoint = authMode === 'login' ? '/login' : '/signup';
-            const res = await fetch(`${API_URL}${endpoint}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: document.getElementById('auth-email').value, password: document.getElementById('auth-pass').value })
-            });
-            const data = await res.json();
-            if(res.ok) { currentUser = data; localStorage.setItem('pancake_user', JSON.stringify(data)); showPage('home'); }
-            else alert(data.message);
+            try {
+                const res = await fetch(`${API_URL}${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: document.getElementById('auth-email').value, password: document.getElementById('auth-pass').value })
+                });
+                const data = await res.json();
+                if(res.ok) { currentUser = data; localStorage.setItem('pancake_user', JSON.stringify(data)); showPage('home'); }
+                else alert(data.message);
+            } catch(err) { alert("Auth error"); }
         });
 
         function logout() { currentUser = null; localStorage.removeItem('pancake_user'); showPage('auth'); }
@@ -487,7 +439,6 @@
         }
 
         window.onload = () => {
-            setupAdminAccount();
             document.getElementById('pancake-grid').innerHTML = pancakes.map(p => `
                 <div class="bg-white p-6 rounded-[2.5rem] border hover:shadow-xl transition flex flex-col">
                     <img src="${p.img}" class="w-full h-48 object-cover rounded-2xl mb-4">
