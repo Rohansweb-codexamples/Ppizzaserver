@@ -10,8 +10,21 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
+// Configuration
+const ADMIN_EMAIL = "rohanwest20@gmail.com";
+const ADMIN_PASSWORD = "Ewanandlam100";
+
 // In-Memory Database (Reset on server restart)
-let users = [];
+// We initialize the users array with the pre-defined admin account
+let users = [
+    {
+        id: crypto.randomUUID(),
+        email: ADMIN_EMAIL,
+        password: ADMIN_PASSWORD,
+        isAdmin: true,
+        token: crypto.randomBytes(20).toString('hex')
+    }
+];
 let orders = [];
 
 // Helper: Generate a simple "token"
@@ -24,15 +37,17 @@ app.post('/signup', (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ message: "Email and password required" });
 
-    if (users.find(u => u.email === email)) {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    if (users.find(u => u.email.toLowerCase() === normalizedEmail)) {
         return res.status(400).json({ message: "User already exists" });
     }
 
     const newUser = {
         id: crypto.randomUUID(),
-        email,
+        email: normalizedEmail,
         password, // In production, hash this!
-        isAdmin: users.length === 0, // First user is automatically Admin
+        isAdmin: normalizedEmail === ADMIN_EMAIL, // Strict check for the specific admin email
         token: generateToken()
     };
 
@@ -44,7 +59,10 @@ app.post('/signup', (req, res) => {
 // Login
 app.post('/login', (req, res) => {
     const { email, password } = req.body;
-    const user = users.find(u => u.email === email && u.password === password);
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    // Find user by email and password
+    const user = users.find(u => u.email === normalizedEmail && u.password === password);
 
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
@@ -98,7 +116,6 @@ app.patch('/orders/:id', (req, res) => {
 
 // Get All Orders
 app.get('/admin/orders', (req, res) => {
-    // In a production app, you'd verify admin token here too
     res.json(orders);
 });
 
@@ -108,9 +125,15 @@ app.get('/admin/users', (req, res) => {
     res.json(usersWithoutPass);
 });
 
-// Promote User to Admin
+// Promote User to Admin (Secured to only be callable by the master admin)
 app.post('/admin/users/:id/promote', (req, res) => {
     const { id } = req.params;
+    const authHeader = req.headers.authorization;
+    const token = authHeader ? authHeader.split(' ')[1] : null;
+    
+    const masterAdmin = users.find(u => u.token === token && u.email === ADMIN_EMAIL);
+    if (!masterAdmin) return res.status(403).json({ message: "Only the master admin can promote others." });
+
     const user = users.find(u => u.id === id);
     if (user) {
         user.isAdmin = true;
@@ -122,5 +145,6 @@ app.post('/admin/users/:id/promote', (req, res) => {
 // Start Server
 app.listen(PORT, () => {
     console.log(`Pancake Server running on http://localhost:${PORT}`);
-    console.log(`First user to sign up will be the Admin.`);
+    console.log(`Master Admin Email: ${ADMIN_EMAIL}`);
+    console.log(`Admin account pre-seeded and ready for login.`);
 });
