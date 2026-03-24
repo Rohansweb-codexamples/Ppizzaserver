@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rohan's Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f2f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .android-status-bar {
+            height: 24px;
+            background: transparent;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 0 12px;
+            font-size: 12px;
+            color: #555;
+        }
+
+        .android-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .booking-item {
+            transition: transform 0.2s;
+        }
+
+        .booking-item:active {
+            transform: scale(0.98);
+            background-color: #f3f4f6;
+        }
+
+        #login-overlay {
+            background: linear-gradient(135deg, #FF4B2B 0%, #FF416C 100%);
+        }
+    </style>
+</head>
+<body class="flex flex-col">
+
+    <!-- Login Overlay -->
+    <div id="login-overlay" class="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 text-white text-center">
+        <div class="mb-8">
+            <div class="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl">
+                <span class="text-4xl">🍕</span>
+            </div>
+            <h1 class="text-3xl font-bold">Rohan's Admin</h1>
+            <p class="opacity-90 mt-2">Pizza & Café Management</p>
+        </div>
+
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm">
+            <h2 class="text-gray-800 text-xl font-semibold mb-6">Hello, sign in</h2>
+            <div id="g_id_onload"
+                 data-client_id="607124730463-rourlv2ariaqrji9cded64pk0otujkca.apps.googleusercontent.com"
+                 data-context="signin"
+                 data-ux_mode="popup"
+                 data-callback="handleCredentialResponse"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-shape="pill"
+                 data-theme="outline"
+                 data-text="signin_with"
+                 data-size="large"
+                 data-logo_alignment="left">
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Content -->
+    <div id="app-content" class="hidden flex flex-col h-full">
+        <!-- Status Bar -->
+        <div class="android-status-bar">
+            <span class="mr-2">12:30</span>
+            <span class="mr-2">📶</span>
+            <span>🔋</span>
+        </div>
+
+        <!-- Header -->
+        <header class="bg-white px-6 py-4 flex justify-between items-center border-b border-gray-100">
+            <div>
+                <h1 class="text-xl font-bold text-gray-800">New Bookings</h1>
+                <p id="status-text" class="text-xs text-green-500 font-medium">● System Online</p>
+            </div>
+            <button onclick="logout()" class="text-gray-400 p-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+            </button>
+        </header>
+
+        <!-- Booking List -->
+        <main class="flex-1 overflow-y-auto p-4 space-y-4">
+            <div id="loading-state" class="flex flex-col items-center justify-center h-48 text-gray-400">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mb-2"></div>
+                <p>Waiting for incoming orders...</p>
+            </div>
+            <div id="bookings-container" class="space-y-3">
+                <!-- Bookings populated via JS -->
+            </div>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bg-white border-t border-gray-100 flex justify-around py-3">
+            <button class="flex flex-col items-center text-orange-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <span class="text-[10px] mt-1 font-medium">Orders</span>
+            </button>
+            <button class="flex flex-col items-center text-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="text-[10px] mt-1 font-medium">History</span>
+            </button>
+            <button class="flex flex-col items-center text-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0" />
+                </svg>
+                <span class="text-[10px] mt-1 font-medium">Settings</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'rohan-pizza-001';
+
+        // Auth Logic
+        window.handleCredentialResponse = async (response) => {
+            console.log("Encoded JWT ID token: " + response.credential);
+            // In a real production app, you'd verify this JWT.
+            // For this demo, we unlock the UI on callback.
+            document.getElementById('login-overlay').classList.add('hidden');
+            document.getElementById('app-content').classList.remove('hidden');
+            
+            // Sync with Firebase to allow data access
+            await signInAnonymously(auth);
+        };
+
+        window.logout = () => {
+            location.reload();
+        };
+
+        // UI Logic
+        const container = document.getElementById('bookings-container');
+        const loading = document.getElementById('loading-state');
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                const bookingsRef = collection(db, 'artifacts', appId, 'public', 'data', 'bookings');
+                
+                // Rule: Fetch all and sort in memory
+                onSnapshot(bookingsRef, (snapshot) => {
+                    const bookings = [];
+                    snapshot.forEach(doc => {
+                        bookings.push({ id: doc.id, ...doc.data() });
+                    });
+
+                    // Sort by timestamp desc
+                    bookings.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                    
+                    renderBookings(bookings);
+                }, (error) => {
+                    console.error("Firestore Error:", error);
+                });
+            }
+        });
+
+        function renderBookings(bookings) {
+            loading.classList.add('hidden');
+            if (bookings.length === 0) {
+                container.innerHTML = `<p class="text-center text-gray-400 py-10">No bookings yet.</p>`;
+                return;
+            }
+
+            container.innerHTML = bookings.map(b => `
+                <div class="android-card p-4 booking-item border-l-4 ${b.status === 'confirmed' ? 'border-green-500' : 'border-orange-500'}">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="font-bold text-gray-800">${b.customerName}</h3>
+                            <p class="text-xs text-gray-500">${b.phoneNumber}</p>
+                        </div>
+                        <span class="text-[10px] font-bold px-2 py-1 rounded-full uppercase ${b.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}">
+                            ${b.status || 'pending'}
+                        </span>
+                    </div>
+                    <div class="flex items-center space-x-4 text-sm text-gray-600 mb-3">
+                        <div class="flex items-center">
+                            <span>📅</span> <span class="ml-1">${b.date}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span>⏰</span> <span class="ml-1">${b.time}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span>👤</span> <span class="ml-1">${b.guests}</span>
+                        </div>
+                    </div>
+                    ${b.status !== 'confirmed' ? `
+                        <button onclick="confirmBooking('${b.id}')" class="w-full bg-orange-500 text-white py-2 rounded-xl text-sm font-medium hover:bg-orange-600 transition-colors">
+                            Confirm Reservation
+                        </button>
+                    ` : `
+                        <p class="text-center text-xs text-green-600 font-medium">✓ Order Processed</p>
+                    `}
+                </div>
+            `).join('');
+        }
+
+        window.confirmBooking = async (id) => {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'bookings', id);
+            await updateDoc(docRef, { status: 'confirmed' });
+        };
+    </script>
+</body>
+</html>
