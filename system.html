@@ -5,386 +5,475 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rohan's Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
         
+        :root {
+            --theme-color: #1a73e8;
+            --theme-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
         body {
             font-family: 'Roboto', sans-serif;
             background-color: #f8f9fa;
             height: 100vh;
             overflow: hidden;
             color: #202124;
+            transition: background 0.5s ease;
         }
 
-        /* Android OOBE Styles */
-        .setup-screen {
+        /* Screen Transitions */
+        .screen {
             display: none;
             flex-direction: column;
             height: 100%;
-            padding: 40px 24px;
             background: white;
-            animation: slideIn 0.3s ease-out;
+            animation: fadeIn 0.3s ease-out;
         }
         
-        @keyframes slideIn {
-            from { transform: translateX(30px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
         }
 
-        .active-screen { display: flex; }
+        .active-screen { display: flex !important; }
 
-        .android-btn-primary {
-            background-color: #1a73e8;
-            color: white;
+        /* Power Save Mode */
+        #power-save-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: black;
+            z-index: 1000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            cursor: pointer;
+        }
+        #power-save-overlay.active { display: flex; }
+
+        /* Theme selection cards */
+        .theme-card {
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .theme-card.selected {
+            border-color: var(--theme-color);
+            transform: translateY(-4px);
+        }
+
+        /* Lock Screen Styling */
+        #screen-lock {
+            background: var(--theme-bg);
+            background-size: cover;
+            background-position: center;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 32px;
+            padding: 40px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        /* Button Styles */
+        .android-btn {
             padding: 12px 28px;
             border-radius: 24px;
             font-weight: 500;
-            transition: background 0.2s;
+            transition: all 0.2s;
         }
+        .btn-primary { background-color: var(--theme-color); color: white; }
+        .btn-primary:active { opacity: 0.8; }
 
-        .android-btn-secondary {
-            color: #1a73e8;
-            padding: 12px 24px;
+        /* Lock Screen Keypad */
+        .keypad-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            max-width: 280px;
+            margin: 0 auto;
+        }
+        .key-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
             font-weight: 500;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.1);
         }
+        .key-btn:active { background: rgba(255, 255, 255, 0.4); }
 
-        /* Sheets Table Styles */
-        .sheets-container {
-            overflow: auto;
-            border: 1px solid #e0e0e0;
-            background: white;
-        }
-
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            font-size: 13px;
-        }
-
-        th {
-            background: #f8f9fa;
-            border: 1px solid #e0e0e0;
-            padding: 8px 12px;
-            text-align: left;
-            color: #5f6368;
-            font-weight: 500;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        td {
-            border: 1px solid #e0e0e0;
-            padding: 10px 12px;
-            white-space: nowrap;
-        }
-
-        tr:hover {
-            background-color: #f1f3f4;
-        }
-
-        /* Status Badges */
-        .status-pill {
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-
-        /* Settings Toggle */
         .view-pane { display: none; height: 100%; flex-direction: column; }
         .view-active { display: flex; }
+
+        .sheet-frame-container {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #fff;
+        }
+
+        .notification-toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #323336;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 14px;
+            transition: transform 0.3s ease;
+            z-index: 200;
+        }
+        .toast-active { transform: translateX(-50%) translateY(0); }
     </style>
 </head>
 <body class="flex flex-col h-screen">
 
-    <!-- 1. GOOGLE SIGN IN SCREEN -->
-    <div id="screen-auth" class="setup-screen active-screen justify-center items-center text-center">
-        <div class="mb-10">
-            <div class="w-24 h-24 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span class="text-5xl">🍕</span>
-            </div>
-            <h1 class="text-3xl font-light mb-2">Android for Work</h1>
-            <p class="text-gray-600">Sign in to initialize Rohan's POS</p>
-        </div>
-        
-        <div class="w-full max-w-xs">
-            <div id="g_id_onload"
-                 data-client_id="607124730463-rourlv2ariaqrji9cded64pk0otujkca.apps.googleusercontent.com"
-                 data-callback="handleSignIn"
-                 data-auto_prompt="false">
-            </div>
-            <div class="g_id_signin" data-type="standard" data-shape="pill" data-theme="filled_blue" data-text="continue_with" data-size="large"></div>
+    <!-- Power Save Overlay -->
+    <div id="power-save-overlay" onclick="wakeUp()">
+        <div class="text-white opacity-20 text-center">
+            <p class="text-6xl font-thin mb-4" id="power-save-time">00:00</p>
+            <p class="text-sm tracking-widest uppercase">Tap to wake</p>
         </div>
     </div>
 
-    <!-- 2. SECURITY SETUP (PIN/PATTERN/PASS) -->
-    <div id="screen-security" class="setup-screen">
+    <!-- 1. SETUP FLOW -->
+    <div id="screen-start" class="screen active-screen justify-center items-center p-10 text-center">
+        <div class="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center mb-6 shadow-lg">
+            <span class="text-4xl text-white">🍕</span>
+        </div>
+        <h1 class="text-3xl font-light mb-2">Management Terminal</h1>
+        <p class="text-gray-500 mb-10">Configure your secure access</p>
+        <button onclick="navTo('screen-start', 'screen-profile')" class="android-btn btn-primary w-full max-w-xs">Start Setup</button>
+    </div>
+
+    <div id="screen-profile" class="screen p-10">
         <div class="flex-1">
-            <div class="text-blue-600 mb-6 text-4xl">🔐</div>
-            <h1 class="text-2xl mb-4">Protect your device</h1>
-            <p class="text-gray-600 mb-8">Choose how you want to unlock your management apps.</p>
+            <h1 class="text-2xl mb-2">Manager Profile</h1>
+            <p class="text-gray-600 mb-8">This name will appear on the dashboard.</p>
+            <input type="text" id="setup-username" class="w-full p-3 border-b-2 border-blue-600 focus:outline-none text-xl" placeholder="Rohan">
+        </div>
+        <div class="flex justify-end"><button onclick="navTo('screen-profile', 'screen-themes')" class="android-btn btn-primary">Next</button></div>
+    </div>
+
+    <!-- Theme Selection -->
+    <div id="screen-themes" class="screen p-10">
+        <div class="flex-1">
+            <h1 class="text-2xl mb-2">Choose a Theme</h1>
+            <p class="text-gray-600 mb-8">Select the visual style for your lock screen.</p>
             
-            <div class="space-y-4 max-w-sm">
-                <div class="flex flex-col gap-4">
-                    <select id="lock-type" class="p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
-                        <option value="pin">PIN (4-digits)</option>
-                        <option value="pattern">Pattern (9-dot)</option>
-                        <option value="password">Password (Alphanumeric)</option>
-                    </select>
-                    <input type="text" id="lock-value" class="p-4 text-center text-xl border-b-2 border-blue-600 focus:outline-none" placeholder="Enter security value">
+            <div class="grid grid-cols-1 gap-4">
+                <div onclick="selectTheme('blue', '#1a73e8', 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)')" class="theme-card selected bg-white p-4 rounded-2xl border-2 shadow-sm flex items-center gap-4" id="theme-blue">
+                    <div class="w-12 h-12 rounded-lg bg-blue-600"></div>
+                    <div>
+                        <p class="font-bold">Classic Blue</p>
+                        <p class="text-xs text-gray-500">Professional and clean</p>
+                    </div>
+                </div>
+                <div onclick="selectTheme('green', '#2e7d32', 'linear-gradient(135deg, #134e5e 0%, #71b280 100%)')" class="theme-card bg-white p-4 rounded-2xl border-2 shadow-sm flex items-center gap-4" id="theme-green">
+                    <div class="w-12 h-12 rounded-lg bg-green-700"></div>
+                    <div>
+                        <p class="font-bold">Forest Green</p>
+                        <p class="text-xs text-gray-500">Modern and organic</p>
+                    </div>
+                </div>
+                <div onclick="selectTheme('midnight', '#7b1fa2', 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)')" class="theme-card bg-white p-4 rounded-2xl border-2 shadow-sm flex items-center gap-4" id="theme-midnight">
+                    <div class="w-12 h-12 rounded-lg bg-purple-900"></div>
+                    <div>
+                        <p class="font-bold">Midnight Purple</p>
+                        <p class="text-xs text-gray-500">High-contrast dark mode</p>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="flex justify-end gap-2">
-            <button onclick="changeScreen('screen-security', 'screen-passkey')" class="android-btn-primary">Next</button>
-        </div>
+        <div class="flex justify-end"><button onclick="navTo('screen-themes', 'screen-set-lock')" class="android-btn btn-primary">Next</button></div>
     </div>
 
-    <!-- 3. PASSKEY SETUP -->
-    <div id="screen-passkey" class="setup-screen">
+    <div id="screen-set-lock" class="screen p-10">
         <div class="flex-1">
-            <div class="text-blue-600 mb-6 text-4xl">🔑</div>
-            <h1 class="text-2xl mb-4">Use a passkey</h1>
-            <p class="text-gray-600 mb-6">Biometric authentication for faster check-ins.</p>
-            <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100 flex items-center gap-4">
-                <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white">
-                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M13 7H7v6h6V7z"/><path fill-rule="evenodd" d="M2 10a8 8 0 1116 0 8 8 0 01-16 0zm8-7a7 7 0 00-5.468 11.37C5.962 12.485 7.827 12 10 12s4.038.485 5.468 2.37A7 7 0 0010 3z" clip-rule="evenodd"/></svg>
-                </div>
-                <div>
-                    <p class="text-sm font-bold text-blue-900">Passkey is ready</p>
-                    <p class="text-xs text-blue-700">Linked to your Google Account</p>
+            <h1 class="text-2xl mb-2">Set terminal PIN</h1>
+            <p class="text-gray-600 mb-8">Create a 4-digit code to lock this device.</p>
+            <input type="password" maxlength="4" id="setup-pin" class="w-full p-3 border-b-2 border-blue-600 focus:outline-none text-center text-4xl tracking-widest" placeholder="••••">
+        </div>
+        <div class="flex justify-end"><button onclick="completeSetup()" class="android-btn btn-primary">Finish Setup</button></div>
+    </div>
+
+    <!-- 2. LOCK SCREEN -->
+    <div id="screen-lock" class="screen justify-center items-center">
+        <div class="glass-panel text-center text-white">
+            <div class="mb-6">
+                <h2 id="lock-time" class="text-5xl font-light mb-1">12:00</h2>
+                <p id="lock-date" class="text-sm uppercase tracking-widest opacity-70">Tuesday, March 24</p>
+            </div>
+
+            <div class="mb-8">
+                <h2 id="lock-user-name" class="text-xl font-medium">Locked</h2>
+                <p id="lock-msg" class="text-sm opacity-60">Enter PIN to unlock</p>
+                <div id="pin-display" class="flex justify-center gap-3 mt-4">
+                    <div class="w-3 h-3 rounded-full border-2 border-white/50"></div>
+                    <div class="w-3 h-3 rounded-full border-2 border-white/50"></div>
+                    <div class="w-3 h-3 rounded-full border-2 border-white/50"></div>
+                    <div class="w-3 h-3 rounded-full border-2 border-white/50"></div>
                 </div>
             </div>
-        </div>
-        <div class="flex justify-end gap-2">
-            <button onclick="changeScreen('screen-passkey', 'screen-profile')" class="android-btn-primary">Next</button>
+
+            <div class="keypad-grid">
+                <div class="key-btn" onclick="pressKey('1')">1</div>
+                <div class="key-btn" onclick="pressKey('2')">2</div>
+                <div class="key-btn" onclick="pressKey('3')">3</div>
+                <div class="key-btn" onclick="pressKey('4')">4</div>
+                <div class="key-btn" onclick="pressKey('5')">5</div>
+                <div class="key-btn" onclick="pressKey('6')">6</div>
+                <div class="key-btn" onclick="pressKey('7')">7</div>
+                <div class="key-btn" onclick="pressKey('8')">8</div>
+                <div class="key-btn" onclick="pressKey('9')">9</div>
+                <div></div>
+                <div class="key-btn" onclick="pressKey('0')">0</div>
+                <div class="key-btn" onclick="clearPin()">⌫</div>
+            </div>
         </div>
     </div>
 
-    <!-- 4. PROFILE SETUP (CONTINUE) -->
-    <div id="screen-profile" class="setup-screen">
-        <div class="flex-1">
-            <div class="text-green-600 mb-6 text-4xl">👤</div>
-            <h1 class="text-2xl mb-4">Personalize your station</h1>
-            <p class="text-gray-600 mb-8">Enter the staff name for this terminal.</p>
-            
-            <div class="max-w-sm">
-                <label class="block text-xs font-bold text-gray-400 mb-1 uppercase">Manager Name</label>
-                <input type="text" id="admin-name" class="w-full p-4 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. Rohan">
-            </div>
-        </div>
-        <div class="flex justify-end gap-2">
-            <button onclick="finalizeSetup()" class="android-btn-primary">Finish & Continue</button>
-        </div>
-    </div>
-
-    <!-- 5. MAIN SYSTEM -->
-    <div id="screen-main" class="hidden flex-col h-full bg-white">
-        <!-- App Bar -->
-        <header class="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-4">
-            <div id="app-icon-container" class="cursor-pointer" onclick="toggleView('management')">
-                <div class="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center text-white shadow-sm">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-2h2v2zm0-4H7v-2h2v2zm0-4H7V7h2v2zm4 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2zm4 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z"/></svg>
-                </div>
+    <!-- 3. MAIN INTERFACE -->
+    <div id="screen-main" class="screen">
+        <header class="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-4 shrink-0">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-sm cursor-pointer theme-bg" onclick="toggleView('management')">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-2h2v2zm0-4H7v-2h2v2zm0-4H7V7h2v2zm4 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2zm4 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z"/></svg>
             </div>
             <div class="flex flex-col">
-                <span id="app-title" class="text-sm font-bold text-gray-800">Management Console</span>
-                <span id="admin-label" class="text-[10px] text-gray-400">Loading profile...</span>
+                <span id="app-title" class="text-sm font-bold text-gray-800">Booking Sheet</span>
+                <span id="admin-label" class="text-[10px] text-gray-400 uppercase tracking-tighter">Terminal Active</span>
             </div>
             <div class="flex-1"></div>
+            
             <button onclick="toggleView('settings')" class="p-2 hover:bg-gray-100 rounded-full">
                 <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z" /></svg>
             </button>
         </header>
 
-        <!-- View: Management (Sheets) -->
+        <!-- View: Sheet -->
         <div id="view-management" class="view-pane view-active">
-            <div class="bg-blue-50/50 border-b border-gray-200 px-4 py-1 flex items-center gap-6 text-[11px] text-gray-600">
-                <div class="flex items-center gap-1 font-bold">File</div>
-                <div class="flex items-center gap-1 font-bold">Data</div>
-                <div class="flex-1"></div>
-                <span id="sync-status" class="text-green-600 font-medium italic">Online: Synced to Cloud</span>
-            </div>
+            <iframe id="sheet-iframe" class="sheet-frame-container" src="https://docs.google.com/spreadsheets/d/1gaUEoo3a0et4xj5G5_RMeCmsLmVsO86E0LQ3N3ojli8/edit?usp=drivesdk&rm=minimal"></iframe>
+        </div>
 
-            <main class="flex-1 sheets-container">
-                <table id="bookings-table">
-                    <thead>
-                        <tr>
-                            <th class="w-10 text-center">In</th>
-                            <th>Status</th>
-                            <th>Customer Name</th>
-                            <th>Phone</th>
-                            <th>Date</th>
-                            <th>Time</th>
-                            <th>Guests</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="bookings-body"></tbody>
-                </table>
-                <div id="loading-overlay" class="p-20 text-center">
-                    <div class="animate-spin inline-block w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full mb-2"></div>
+        <!-- View: Settings App -->
+        <div id="view-settings" class="view-pane bg-gray-50 overflow-y-auto">
+            <div class="p-6">
+                <h2 class="text-2xl font-bold mb-6">Settings</h2>
+                
+                <div class="space-y-4">
+                    <div class="bg-white p-4 rounded-2xl border border-gray-200">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase mb-2">User Information</p>
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-500">👤</div>
+                            <div>
+                                <p id="settings-user-name" class="font-medium text-gray-900">Rohan</p>
+                                <p class="text-xs text-gray-500">Terminal Administrator</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                        <div class="p-4 border-b border-gray-100 flex justify-between items-center cursor-pointer" onclick="enterPowerSave()">
+                            <div class="flex items-center gap-3">
+                                <span class="text-green-600">🔋</span>
+                                <span class="text-sm">Power Save Mode</span>
+                            </div>
+                            <span class="text-gray-400">→</span>
+                        </div>
+                        <div class="p-4 border-b border-gray-100 flex justify-between items-center cursor-pointer" onclick="lockDevice()">
+                            <div class="flex items-center gap-3">
+                                <span class="text-blue-600">🔐</span>
+                                <span class="text-sm">Lock Terminal Now</span>
+                            </div>
+                            <span class="text-gray-400">→</span>
+                        </div>
+                        <div class="p-4 flex justify-between items-center cursor-pointer" onclick="location.reload()">
+                            <div class="flex items-center gap-3">
+                                <span class="text-red-500">🔄</span>
+                                <span class="text-sm text-red-500">Factory Reset Terminal</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 rounded-2xl text-white shadow-lg theme-bg-target" style="background: var(--theme-color)">
+                        <h3 class="font-bold mb-1">System Version</h3>
+                        <p class="text-xs opacity-80">v3.0.0 (Build: Rohan-Pizza-Premium)</p>
+                    </div>
                 </div>
-            </main>
-        </div>
-
-        <!-- View: Settings -->
-        <div id="view-settings" class="view-pane bg-gray-50 p-6 overflow-y-auto">
-            <h2 class="text-xl font-bold mb-6">System Settings</h2>
-            
-            <div class="space-y-6">
-                <section class="bg-white rounded-2xl shadow-sm border p-4">
-                    <h3 class="text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider">Device Admin</h3>
-                    <div class="flex items-center justify-between py-3 border-b border-gray-100">
-                        <div>
-                            <p class="text-sm font-medium">Station Name</p>
-                            <p id="settings-name-val" class="text-xs text-gray-500">-</p>
-                        </div>
-                        <button class="text-blue-600 text-xs">Edit</button>
-                    </div>
-                    <div class="flex items-center justify-between py-3">
-                        <div>
-                            <p class="text-sm font-medium">Screen Lock</p>
-                            <p id="settings-lock-val" class="text-xs text-gray-500">-</p>
-                        </div>
-                        <button class="text-blue-600 text-xs">Modify</button>
-                    </div>
-                </section>
-
-                <section class="bg-white rounded-2xl shadow-sm border p-4">
-                    <h3 class="text-xs font-bold text-gray-400 mb-4 uppercase tracking-wider">Connected Apps</h3>
-                    <div class="flex items-center gap-4 py-2">
-                        <div class="w-10 h-10 bg-green-100 text-green-700 rounded-xl flex items-center justify-center">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-2h2v2zm0-4H7v-2h2v2zm0-4H7V7h2v2zm4 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2zm4 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z"/></svg>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-sm font-medium">Management Terminal</p>
-                            <p class="text-xs text-gray-500">v2.4.0 • Active</p>
-                        </div>
-                        <button onclick="toggleView('management')" class="text-xs font-bold text-blue-600 border border-blue-600 px-3 py-1 rounded-full">OPEN</button>
-                    </div>
-                </section>
-
-                <button onclick="location.reload()" class="w-full text-red-500 text-sm font-bold py-4 bg-white border rounded-2xl">Logout & Wipe Session</button>
             </div>
         </div>
 
-        <!-- Android Nav Bar -->
-        <footer class="bg-black text-white flex justify-center items-center gap-12 h-12">
-            <div class="w-4 h-4 border-2 border-white rotate-45"></div>
-            <div class="w-4 h-4 rounded-full border-2 border-white"></div>
-            <div class="w-4 h-4 border-2 border-white"></div>
+        <!-- Android Bar -->
+        <footer class="bg-black text-white flex justify-center items-center gap-12 h-12 shrink-0">
+            <div class="w-3 h-3 border-2 border-white rotate-45 cursor-pointer" onclick="toggleView('management')"></div>
+            <div class="w-3 h-3 rounded-full border-2 border-white cursor-pointer" onclick="lockDevice()"></div>
+            <div class="w-3 h-3 border-2 border-white cursor-pointer" onclick="enterPowerSave()"></div>
         </footer>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    <!-- Toast Notifier -->
+    <div id="toast" class="notification-toast">Message</div>
 
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'rohan-pizza-001';
+    <script>
+        let terminalState = {
+            user: 'Rohan',
+            pin: '',
+            currentPinInput: '',
+            theme: 'blue',
+            themeColor: '#1a73e8',
+            themeGradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        };
 
-        let userProfile = { name: '', lockType: '', lockValue: '' };
+        // Theme Selection
+        function selectTheme(id, color, gradient) {
+            terminalState.theme = id;
+            terminalState.themeColor = color;
+            terminalState.themeGradient = gradient;
+            
+            document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('selected'));
+            document.getElementById(`theme-${id}`).classList.add('selected');
+            
+            // Apply theme preview to setup
+            document.documentElement.style.setProperty('--theme-color', color);
+            document.documentElement.style.setProperty('--theme-bg', gradient);
+        }
 
         // Navigation
-        window.changeScreen = (current, next) => {
-            document.getElementById(current).classList.remove('active-screen');
-            document.getElementById(next).classList.add('active-screen');
-            document.getElementById(next).classList.remove('hidden');
-        };
+        function navTo(from, to) {
+            document.getElementById(from).classList.remove('active-screen');
+            document.getElementById(to).classList.add('active-screen');
+        }
 
-        window.toggleView = (view) => {
-            document.querySelectorAll('.view-pane').forEach(p => p.classList.remove('view-active'));
-            document.getElementById(`view-${view}`).classList.add('view-active');
-            document.getElementById('app-title').innerText = view === 'settings' ? 'System Settings' : 'Management Console';
-        };
-
-        window.handleSignIn = async (response) => {
-            changeScreen('screen-auth', 'screen-security');
-            await signInAnonymously(auth);
-        };
-
-        window.finalizeSetup = () => {
-            userProfile.name = document.getElementById('admin-name').value || 'Admin';
-            userProfile.lockType = document.getElementById('lock-type').value;
-            userProfile.lockValue = document.getElementById('lock-value').value;
-
-            document.getElementById('admin-label').innerText = `${userProfile.name} • Station Alpha`;
-            document.getElementById('settings-name-val').innerText = userProfile.name;
-            document.getElementById('settings-lock-val').innerText = userProfile.lockType.toUpperCase();
-
-            changeScreen('screen-profile', 'screen-main');
-        };
-
-        // Data Management
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                const bookingsRef = collection(db, 'artifacts', appId, 'public', 'data', 'bookings');
-                onSnapshot(bookingsRef, (snapshot) => {
-                    const data = [];
-                    snapshot.forEach(doc => data.push({ id: doc.id, ...doc.data() }));
-                    data.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-                    renderTable(data);
-                });
-            }
-        });
-
-        function renderTable(bookings) {
-            document.getElementById('loading-overlay').classList.add('hidden');
-            const body = document.getElementById('bookings-body');
+        // Setup Logic
+        function completeSetup() {
+            const nameInput = document.getElementById('setup-username').value;
+            const pinInput = document.getElementById('setup-pin').value;
             
-            if (bookings.length === 0) {
-                body.innerHTML = `<tr><td colspan="8" class="text-center py-20 text-gray-400">No active records.</td></tr>`;
+            if(!nameInput || pinInput.length < 4) {
+                showToast("Please enter a name and a 4-digit PIN");
                 return;
             }
 
-            body.innerHTML = bookings.map(b => `
-                <tr class="${b.checkedIn ? 'bg-green-50' : ''}">
-                    <td class="text-center">
-                        <input type="checkbox" ${b.checkedIn ? 'checked' : ''} 
-                               onchange="toggleCheckIn('${b.id}', this.checked)"
-                               class="w-4 h-4 text-green-600 focus:ring-green-500">
-                    </td>
-                    <td><span class="status-pill ${getStatusClass(b.status)}">${b.status || 'pending'}</span></td>
-                    <td class="font-medium">${b.customerName}</td>
-                    <td class="text-gray-500">${b.phoneNumber}</td>
-                    <td>${b.date}</td>
-                    <td>${b.time}</td>
-                    <td>${b.guests}</td>
-                    <td class="flex gap-2">
-                        ${b.status !== 'confirmed' ? `
-                            <button onclick="updateStatus('${b.id}', 'confirmed')" class="text-blue-600 text-xs font-bold">CONFIRM</button>
-                        ` : ''}
-                        <button onclick="updateStatus('${b.id}', 'cancelled')" class="text-gray-400 text-xs font-bold">CANCEL</button>
-                    </td>
-                </tr>
-            `).join('');
+            terminalState.user = nameInput;
+            terminalState.pin = pinInput;
+            
+            document.getElementById('lock-user-name').innerText = terminalState.user;
+            document.getElementById('settings-user-name').innerText = terminalState.user;
+            document.getElementById('admin-label').innerText = `${terminalState.user} • Admin`;
+            
+            // Update app icons/backgrounds
+            document.querySelectorAll('.theme-bg-target').forEach(el => el.style.background = terminalState.themeColor);
+
+            lockDevice();
         }
 
-        function getStatusClass(status) {
-            switch(status) {
-                case 'confirmed': return 'bg-green-100 text-green-700';
-                case 'cancelled': return 'bg-gray-100 text-gray-500';
-                default: return 'bg-orange-100 text-orange-700';
+        // Power Save Logic
+        function enterPowerSave() {
+            updateTime();
+            document.getElementById('power-save-overlay').classList.add('active');
+        }
+
+        function wakeUp() {
+            document.getElementById('power-save-overlay').classList.remove('active');
+            lockDevice(); // Wake up always goes to lock screen for security
+        }
+
+        function updateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+            const dateStr = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+            
+            if(document.getElementById('power-save-time')) document.getElementById('power-save-time').innerText = timeStr;
+            if(document.getElementById('lock-time')) document.getElementById('lock-time').innerText = timeStr;
+            if(document.getElementById('lock-date')) document.getElementById('lock-date').innerText = dateStr;
+        }
+        setInterval(updateTime, 10000);
+
+        // Lock Screen Logic
+        function lockDevice() {
+            terminalState.currentPinInput = '';
+            updateTime();
+            updatePinDots();
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
+            document.getElementById('screen-lock').classList.add('active-screen');
+        }
+
+        function pressKey(num) {
+            if (terminalState.currentPinInput.length < 4) {
+                terminalState.currentPinInput += num;
+                updatePinDots();
+                
+                if (terminalState.currentPinInput.length === 4) {
+                    setTimeout(validatePin, 200);
+                }
             }
         }
 
-        window.toggleCheckIn = async (id, checked) => {
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'bookings', id);
-            await updateDoc(docRef, { checkedIn: checked });
+        function clearPin() {
+            terminalState.currentPinInput = '';
+            updatePinDots();
+        }
+
+        function updatePinDots() {
+            const dots = document.getElementById('pin-display').children;
+            const count = terminalState.currentPinInput.length;
+            for (let i = 0; i < 4; i++) {
+                dots[i].classList.toggle('bg-white', i < count);
+                dots[i].classList.toggle('border-white', i < count);
+            }
+        }
+
+        function validatePin() {
+            if (terminalState.currentPinInput === terminalState.pin) {
+                document.getElementById('screen-lock').classList.remove('active-screen');
+                document.getElementById('screen-main').classList.add('active-screen');
+                showToast(`Welcome back, ${terminalState.user}`);
+            } else {
+                showToast("Incorrect PIN");
+                clearPin();
+            }
+        }
+
+        // Settings & View
+        function toggleView(view) {
+            document.querySelectorAll('.view-pane').forEach(v => v.classList.remove('view-active'));
+            document.getElementById(`view-${view}`).classList.add('view-active');
+            document.getElementById('app-title').innerText = view === 'settings' ? 'Settings' : 'Booking Sheet';
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.add('toast-active');
+            setTimeout(() => toast.classList.remove('toast-active'), 3000);
+        }
+
+        // Virtual Server Bridge Listener
+        const serverChannel = new BroadcastChannel('rohan_pizza_server');
+        serverChannel.onmessage = (event) => {
+            if (event.data.type === 'NEW_BOOKING') {
+                showToast(`🔔 New Booking: ${event.data.payload.name}`);
+            }
         };
 
-        window.updateStatus = async (id, newStatus) => {
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'bookings', id);
-            await updateDoc(docRef, { status: newStatus });
-        };
+        // Initial Time Update
+        updateTime();
     </script>
 </body>
 </html>
