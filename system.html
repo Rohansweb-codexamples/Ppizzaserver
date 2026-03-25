@@ -118,7 +118,7 @@
         .view-pane { display: none; height: 100%; flex-direction: column; }
         .view-active { display: flex; }
 
-        .sheet-frame-container {
+        .iframe-container {
             flex: 1;
             width: 100%;
             height: 100%;
@@ -142,13 +142,14 @@
         .toast-active { transform: translateX(-50%) translateY(0); }
     </style>
 </head>
-<body class="flex flex-col h-screen">
+<body class="flex flex-col h-screen" onmousemove="resetInactivityTimer()" onclick="resetInactivityTimer()" onkeypress="resetInactivityTimer()">
 
     <!-- Power Save Overlay -->
     <div id="power-save-overlay" onclick="wakeUp()">
         <div class="text-white opacity-20 text-center">
             <p class="text-6xl font-thin mb-4" id="power-save-time">00:00</p>
             <p class="text-sm tracking-widest uppercase">Tap to wake</p>
+            <p class="text-[10px] mt-2 opacity-50">Auto Power Saving Active</p>
         </div>
     </div>
 
@@ -256,11 +257,15 @@
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-2h2v2zm0-4H7v-2h2v2zm0-4H7V7h2v2zm4 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2zm4 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z"/></svg>
             </div>
             <div class="flex flex-col">
-                <span id="app-title" class="text-sm font-bold text-gray-800">Booking Sheet</span>
+                <span id="app-title" class="text-sm font-bold text-gray-800 uppercase">Management</span>
                 <span id="admin-label" class="text-[10px] text-gray-400 uppercase tracking-tighter">Terminal Active</span>
             </div>
             <div class="flex-1"></div>
             
+            <button onclick="toggleView('pizza-server')" class="p-2 hover:bg-gray-100 rounded-full group" title="Pizza Server">
+                <span class="text-lg group-hover:scale-110 transition-transform">🍕</span>
+            </button>
+
             <button onclick="toggleView('settings')" class="p-2 hover:bg-gray-100 rounded-full">
                 <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z" /></svg>
             </button>
@@ -268,7 +273,12 @@
 
         <!-- View: Sheet -->
         <div id="view-management" class="view-pane view-active">
-            <iframe id="sheet-iframe" class="sheet-frame-container" src="https://docs.google.com/spreadsheets/d/1gaUEoo3a0et4xj5G5_RMeCmsLmVsO86E0LQ3N3ojli8/edit?usp=drivesdk&rm=minimal"></iframe>
+            <iframe id="sheet-iframe" class="iframe-container" src="https://docs.google.com/spreadsheets/d/1gaUEoo3a0et4xj5G5_RMeCmsLmVsO86E0LQ3N3ojli8/edit?usp=drivesdk&rm=minimal"></iframe>
+        </div>
+
+        <!-- View: Pizza Server App -->
+        <div id="view-pizza-server" class="view-pane">
+            <iframe id="pizza-server-iframe" class="iframe-container" src="https://rohansweb-codexamples.github.io/Ppizzaserver/"></iframe>
         </div>
 
         <!-- View: Settings App -->
@@ -311,9 +321,14 @@
                         </div>
                     </div>
 
+                    <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                        <h3 class="font-bold text-blue-800 text-sm mb-1">Auto Power Save</h3>
+                        <p class="text-xs text-blue-600 opacity-80">Terminal will dim after 20 seconds of inactivity to protect your screen.</p>
+                    </div>
+
                     <div class="p-4 rounded-2xl text-white shadow-lg theme-bg-target" style="background: var(--theme-color)">
                         <h3 class="font-bold mb-1">System Version</h3>
-                        <p class="text-xs opacity-80">v3.0.0 (Build: Rohan-Pizza-Premium)</p>
+                        <p class="text-xs opacity-80">v3.5.0 (Build: Rohan-Pizza-Enterprise)</p>
                     </div>
                 </div>
             </div>
@@ -337,8 +352,25 @@
             currentPinInput: '',
             theme: 'blue',
             themeColor: '#1a73e8',
-            themeGradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+            themeGradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            inactivityTimer: null,
+            isLocked: false
         };
+
+        // --- INACTIVITY TIMER ---
+        function resetInactivityTimer() {
+            // Don't auto-power save if we are already in power save mode or on setup screens
+            const powerSaveActive = document.getElementById('power-save-overlay').classList.contains('active');
+            const setupScreen = !document.getElementById('screen-main').classList.contains('active-screen') && 
+                                !document.getElementById('screen-lock').classList.contains('active-screen');
+
+            if (powerSaveActive || setupScreen) return;
+
+            clearTimeout(terminalState.inactivityTimer);
+            terminalState.inactivityTimer = setTimeout(() => {
+                enterPowerSave();
+            }, 20000); // 20 Seconds
+        }
 
         // Theme Selection
         function selectTheme(id, color, gradient) {
@@ -349,7 +381,6 @@
             document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('selected'));
             document.getElementById(`theme-${id}`).classList.add('selected');
             
-            // Apply theme preview to setup
             document.documentElement.style.setProperty('--theme-color', color);
             document.documentElement.style.setProperty('--theme-bg', gradient);
         }
@@ -375,9 +406,7 @@
             
             document.getElementById('lock-user-name').innerText = terminalState.user;
             document.getElementById('settings-user-name').innerText = terminalState.user;
-            document.getElementById('admin-label').innerText = `${terminalState.user} • Admin`;
             
-            // Update app icons/backgrounds
             document.querySelectorAll('.theme-bg-target').forEach(el => el.style.background = terminalState.themeColor);
 
             lockDevice();
@@ -387,11 +416,13 @@
         function enterPowerSave() {
             updateTime();
             document.getElementById('power-save-overlay').classList.add('active');
+            clearTimeout(terminalState.inactivityTimer);
         }
 
         function wakeUp() {
             document.getElementById('power-save-overlay').classList.remove('active');
-            lockDevice(); // Wake up always goes to lock screen for security
+            lockDevice(); 
+            resetInactivityTimer();
         }
 
         function updateTime() {
@@ -408,10 +439,12 @@
         // Lock Screen Logic
         function lockDevice() {
             terminalState.currentPinInput = '';
+            terminalState.isLocked = true;
             updateTime();
             updatePinDots();
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
             document.getElementById('screen-lock').classList.add('active-screen');
+            clearTimeout(terminalState.inactivityTimer);
         }
 
         function pressKey(num) {
@@ -441,9 +474,11 @@
 
         function validatePin() {
             if (terminalState.currentPinInput === terminalState.pin) {
+                terminalState.isLocked = false;
                 document.getElementById('screen-lock').classList.remove('active-screen');
                 document.getElementById('screen-main').classList.add('active-screen');
                 showToast(`Welcome back, ${terminalState.user}`);
+                resetInactivityTimer(); // Start the timer when unlocked
             } else {
                 showToast("Incorrect PIN");
                 clearPin();
@@ -454,7 +489,14 @@
         function toggleView(view) {
             document.querySelectorAll('.view-pane').forEach(v => v.classList.remove('view-active'));
             document.getElementById(`view-${view}`).classList.add('view-active');
-            document.getElementById('app-title').innerText = view === 'settings' ? 'Settings' : 'Booking Sheet';
+            
+            const titles = {
+                'management': 'Management',
+                'settings': 'Settings',
+                'pizza-server': 'Pizza Server'
+            };
+            document.getElementById('app-title').innerText = titles[view] || 'Terminal';
+            resetInactivityTimer();
         }
 
         function showToast(msg) {
@@ -472,7 +514,6 @@
             }
         };
 
-        // Initial Time Update
         updateTime();
     </script>
 </body>
