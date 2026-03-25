@@ -43,13 +43,21 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: black;
             z-index: 1000;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: #333;
+            color: white;
             cursor: pointer;
+            background: var(--theme-bg);
+        }
+        #power-save-overlay::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.85); /* Darken the wallpaper */
+            backdrop-filter: blur(10px);
+            z-index: -1;
         }
         #power-save-overlay.active { display: flex; }
 
@@ -64,8 +72,8 @@
             transform: translateY(-4px);
         }
 
-        /* Lock Screen Styling */
-        #screen-lock {
+        /* Lock Screen & Home Screen Backgrounds */
+        #screen-lock, #view-home {
             background: var(--theme-bg);
             background-size: cover;
             background-position: center;
@@ -81,6 +89,20 @@
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         }
 
+        /* App Icons */
+        .app-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+        }
+        .app-icon:active { transform: scale(0.9); }
+
         /* Button Styles */
         .android-btn {
             padding: 12px 28px;
@@ -89,9 +111,8 @@
             transition: all 0.2s;
         }
         .btn-primary { background-color: var(--theme-color); color: white; }
-        .btn-primary:active { opacity: 0.8; }
 
-        /* Lock Screen Keypad */
+        /* Keypad */
         .keypad-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -111,9 +132,7 @@
             font-size: 20px;
             font-weight: 500;
             cursor: pointer;
-            border: 1px solid rgba(255,255,255,0.1);
         }
-        .key-btn:active { background: rgba(255, 255, 255, 0.4); }
 
         .view-pane { display: none; height: 100%; flex-direction: column; }
         .view-active { display: flex; }
@@ -144,12 +163,12 @@
 </head>
 <body class="flex flex-col h-screen" onmousemove="resetInactivityTimer()" onclick="resetInactivityTimer()" onkeypress="resetInactivityTimer()">
 
-    <!-- Power Save Overlay -->
+    <!-- Power Save Overlay (Wallpaper Background) -->
     <div id="power-save-overlay" onclick="wakeUp()">
-        <div class="text-white opacity-20 text-center">
-            <p class="text-6xl font-thin mb-4" id="power-save-time">00:00</p>
-            <p class="text-sm tracking-widest uppercase">Tap to wake</p>
-            <p class="text-[10px] mt-2 opacity-50">Auto Power Saving Active</p>
+        <div class="text-white text-center">
+            <p class="text-7xl font-thin mb-2" id="power-save-time">00:00</p>
+            <p class="text-lg opacity-60 mb-8" id="power-save-date">Monday, Jan 1</p>
+            <p class="text-[10px] tracking-widest uppercase opacity-40 animate-pulse">Tap to wake terminal</p>
         </div>
     </div>
 
@@ -172,37 +191,31 @@
         <div class="flex justify-end"><button onclick="navTo('screen-profile', 'screen-themes')" class="android-btn btn-primary">Next</button></div>
     </div>
 
-    <!-- Theme Selection -->
-    <div id="screen-themes" class="screen p-10">
+    <div id="screen-themes" class="screen p-10 overflow-y-auto">
         <div class="flex-1">
             <h1 class="text-2xl mb-2">Choose a Theme</h1>
-            <p class="text-gray-600 mb-8">Select the visual style for your lock screen.</p>
+            <p class="text-gray-600 mb-8">Select the visual style for your terminal.</p>
             
-            <div class="grid grid-cols-1 gap-4">
+            <div class="grid grid-cols-1 gap-4 pb-10">
                 <div onclick="selectTheme('blue', '#1a73e8', 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)')" class="theme-card selected bg-white p-4 rounded-2xl border-2 shadow-sm flex items-center gap-4" id="theme-blue">
                     <div class="w-12 h-12 rounded-lg bg-blue-600"></div>
-                    <div>
-                        <p class="font-bold">Classic Blue</p>
-                        <p class="text-xs text-gray-500">Professional and clean</p>
-                    </div>
+                    <div><p class="font-bold">Classic Blue</p><p class="text-xs text-gray-500">Professional</p></div>
                 </div>
                 <div onclick="selectTheme('green', '#2e7d32', 'linear-gradient(135deg, #134e5e 0%, #71b280 100%)')" class="theme-card bg-white p-4 rounded-2xl border-2 shadow-sm flex items-center gap-4" id="theme-green">
                     <div class="w-12 h-12 rounded-lg bg-green-700"></div>
-                    <div>
-                        <p class="font-bold">Forest Green</p>
-                        <p class="text-xs text-gray-500">Modern and organic</p>
-                    </div>
+                    <div><p class="font-bold">Forest Green</p><p class="text-xs text-gray-500">Organic</p></div>
                 </div>
-                <div onclick="selectTheme('midnight', '#7b1fa2', 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)')" class="theme-card bg-white p-4 rounded-2xl border-2 shadow-sm flex items-center gap-4" id="theme-midnight">
-                    <div class="w-12 h-12 rounded-lg bg-purple-900"></div>
-                    <div>
-                        <p class="font-bold">Midnight Purple</p>
-                        <p class="text-xs text-gray-500">High-contrast dark mode</p>
-                    </div>
+                <div onclick="selectTheme('sunset', '#e65100', 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)')" class="theme-card bg-white p-4 rounded-2xl border-2 shadow-sm flex items-center gap-4" id="theme-sunset">
+                    <div class="w-12 h-12 rounded-lg bg-orange-600"></div>
+                    <div><p class="font-bold">Sunset Orange</p><p class="text-xs text-gray-500">Vibrant</p></div>
+                </div>
+                <div onclick="selectTheme('ocean', '#006064', 'linear-gradient(135deg, #00c6ff 0%, #0072ff 100%)')" class="theme-card bg-white p-4 rounded-2xl border-2 shadow-sm flex items-center gap-4" id="theme-ocean">
+                    <div class="w-12 h-12 rounded-lg bg-cyan-800"></div>
+                    <div><p class="font-bold">Ocean Blue</p><p class="text-xs text-gray-500">Deep</p></div>
                 </div>
             </div>
         </div>
-        <div class="flex justify-end"><button onclick="navTo('screen-themes', 'screen-set-lock')" class="android-btn btn-primary">Next</button></div>
+        <div class="flex justify-end pt-4 bg-white sticky bottom-0 border-t border-gray-100 pb-10"><button onclick="navTo('screen-themes', 'screen-set-lock')" class="android-btn btn-primary">Next</button></div>
     </div>
 
     <div id="screen-set-lock" class="screen p-10">
@@ -221,18 +234,13 @@
                 <h2 id="lock-time" class="text-5xl font-light mb-1">12:00</h2>
                 <p id="lock-date" class="text-sm uppercase tracking-widest opacity-70">Tuesday, March 24</p>
             </div>
-
-            <div class="mb-8">
-                <h2 id="lock-user-name" class="text-xl font-medium">Locked</h2>
-                <p id="lock-msg" class="text-sm opacity-60">Enter PIN to unlock</p>
-                <div id="pin-display" class="flex justify-center gap-3 mt-4">
-                    <div class="w-3 h-3 rounded-full border-2 border-white/50"></div>
-                    <div class="w-3 h-3 rounded-full border-2 border-white/50"></div>
-                    <div class="w-3 h-3 rounded-full border-2 border-white/50"></div>
-                    <div class="w-3 h-3 rounded-full border-2 border-white/50"></div>
-                </div>
+            <div id="lock-user-name" class="text-lg font-medium mb-4 opacity-90">Rohan</div>
+            <div id="pin-display" class="flex justify-center gap-3 mt-4 mb-8">
+                <div class="w-3 h-3 rounded-full border-2 border-white/50"></div>
+                <div class="w-3 h-3 rounded-full border-2 border-white/50"></div>
+                <div class="w-3 h-3 rounded-full border-2 border-white/50"></div>
+                <div class="w-3 h-3 rounded-full border-2 border-white/50"></div>
             </div>
-
             <div class="keypad-grid">
                 <div class="key-btn" onclick="pressKey('1')">1</div>
                 <div class="key-btn" onclick="pressKey('2')">2</div>
@@ -252,27 +260,47 @@
 
     <!-- 3. MAIN INTERFACE -->
     <div id="screen-main" class="screen">
-        <header class="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-4 shrink-0">
-            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-sm cursor-pointer theme-bg" onclick="toggleView('management')">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-2h2v2zm0-4H7v-2h2v2zm0-4H7V7h2v2zm4 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2zm4 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z"/></svg>
-            </div>
+        <header id="app-header" class="bg-white border-b border-gray-200 px-4 py-3 hidden items-center gap-4 shrink-0">
+            <button onclick="toggleView('home')" class="p-2 hover:bg-gray-100 rounded-full">
+                <svg class="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            </button>
             <div class="flex flex-col">
-                <span id="app-title" class="text-sm font-bold text-gray-800 uppercase">Management</span>
-                <span id="admin-label" class="text-[10px] text-gray-400 uppercase tracking-tighter">Terminal Active</span>
+                <span id="app-title" class="text-sm font-bold text-gray-800 uppercase">Home</span>
             </div>
             <div class="flex-1"></div>
-            
-            <button onclick="toggleView('pizza-server')" class="p-2 hover:bg-gray-100 rounded-full group" title="Pizza Server">
-                <span class="text-lg group-hover:scale-110 transition-transform">🍕</span>
-            </button>
-
-            <button onclick="toggleView('settings')" class="p-2 hover:bg-gray-100 rounded-full">
-                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z" /></svg>
+            <button id="header-reload-btn" onclick="reloadCurrentApp()" class="p-2 hover:bg-gray-100 rounded-full">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
             </button>
         </header>
 
+        <!-- View: Home Screen -->
+        <div id="view-home" class="view-pane view-active p-8 flex-col items-center justify-start">
+            <div class="mt-12 text-center text-white mb-16">
+                <h1 id="home-time" class="text-7xl font-light mb-1">12:00</h1>
+                <p id="home-date" class="text-sm uppercase tracking-widest opacity-80">Wednesday, March 25</p>
+            </div>
+
+            <div class="grid grid-cols-3 gap-10 w-full max-w-sm">
+                <!-- Management/Bookings -->
+                <div onclick="toggleView('management')" class="flex flex-col items-center gap-2 group cursor-pointer">
+                    <div class="app-icon bg-blue-600 text-white">📋</div>
+                    <span class="text-white text-xs font-medium">Bookings</span>
+                </div>
+                <!-- Pizza Server -->
+                <div onclick="toggleView('pizza-server')" class="flex flex-col items-center gap-2 group cursor-pointer">
+                    <div class="app-icon bg-orange-500 text-white">🍕</div>
+                    <span class="text-white text-xs font-medium">Pizza App</span>
+                </div>
+                <!-- Settings -->
+                <div onclick="toggleView('settings')" class="flex flex-col items-center gap-2 group cursor-pointer">
+                    <div class="app-icon bg-gray-700 text-white">⚙️</div>
+                    <span class="text-white text-xs font-medium">Settings</span>
+                </div>
+            </div>
+        </div>
+
         <!-- View: Sheet -->
-        <div id="view-management" class="view-pane view-active">
+        <div id="view-management" class="view-pane">
             <iframe id="sheet-iframe" class="iframe-container" src="https://docs.google.com/spreadsheets/d/1gaUEoo3a0et4xj5G5_RMeCmsLmVsO86E0LQ3N3ojli8/edit?usp=drivesdk&rm=minimal"></iframe>
         </div>
 
@@ -283,52 +311,36 @@
 
         <!-- View: Settings App -->
         <div id="view-settings" class="view-pane bg-gray-50 overflow-y-auto">
-            <div class="p-6">
+            <div class="p-6 pb-20">
                 <h2 class="text-2xl font-bold mb-6">Settings</h2>
-                
                 <div class="space-y-4">
                     <div class="bg-white p-4 rounded-2xl border border-gray-200">
                         <p class="text-[10px] font-bold text-gray-400 uppercase mb-2">User Information</p>
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-500">👤</div>
-                            <div>
-                                <p id="settings-user-name" class="font-medium text-gray-900">Rohan</p>
-                                <p class="text-xs text-gray-500">Terminal Administrator</p>
-                            </div>
+                            <p id="settings-user-name" class="font-medium text-gray-900">Rohan</p>
                         </div>
                     </div>
-
+                    <div class="bg-white p-4 rounded-2xl border border-gray-200">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase mb-3">Screen Preferences</p>
+                        <label class="text-sm text-gray-600 block mb-2">Auto Power Save Timeout</label>
+                        <select id="timeout-selector" onchange="updateTimeoutPreference()" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none">
+                            <option value="20000">20 Seconds</option>
+                            <option value="30000">30 Seconds</option>
+                            <option value="60000">1 Minute</option>
+                            <option value="120000">2 Minutes</option>
+                            <option value="180000">3 Minutes</option>
+                            <option value="300000">5 Minutes</option>
+                            <option value="0">Never</option>
+                        </select>
+                    </div>
                     <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                        <div class="p-4 border-b border-gray-100 flex justify-between items-center cursor-pointer" onclick="enterPowerSave()">
-                            <div class="flex items-center gap-3">
-                                <span class="text-green-600">🔋</span>
-                                <span class="text-sm">Power Save Mode</span>
-                            </div>
-                            <span class="text-gray-400">→</span>
-                        </div>
                         <div class="p-4 border-b border-gray-100 flex justify-between items-center cursor-pointer" onclick="lockDevice()">
-                            <div class="flex items-center gap-3">
-                                <span class="text-blue-600">🔐</span>
-                                <span class="text-sm">Lock Terminal Now</span>
-                            </div>
-                            <span class="text-gray-400">→</span>
+                            <div class="flex items-center gap-3"><span class="text-blue-600">🔐</span><span class="text-sm">Lock Terminal</span></div>
                         </div>
                         <div class="p-4 flex justify-between items-center cursor-pointer" onclick="location.reload()">
-                            <div class="flex items-center gap-3">
-                                <span class="text-red-500">🔄</span>
-                                <span class="text-sm text-red-500">Factory Reset Terminal</span>
-                            </div>
+                            <div class="flex items-center gap-3"><span class="text-red-500">🔄</span><span class="text-sm text-red-500">Factory Reset</span></div>
                         </div>
-                    </div>
-
-                    <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100">
-                        <h3 class="font-bold text-blue-800 text-sm mb-1">Auto Power Save</h3>
-                        <p class="text-xs text-blue-600 opacity-80">Terminal will dim after 20 seconds of inactivity to protect your screen.</p>
-                    </div>
-
-                    <div class="p-4 rounded-2xl text-white shadow-lg theme-bg-target" style="background: var(--theme-color)">
-                        <h3 class="font-bold mb-1">System Version</h3>
-                        <p class="text-xs opacity-80">v3.5.0 (Build: Rohan-Pizza-Enterprise)</p>
                     </div>
                 </div>
             </div>
@@ -337,82 +349,77 @@
         <!-- Android Bar -->
         <footer class="bg-black text-white flex justify-center items-center gap-12 h-12 shrink-0">
             <div class="w-3 h-3 border-2 border-white rotate-45 cursor-pointer" onclick="toggleView('management')"></div>
-            <div class="w-3 h-3 rounded-full border-2 border-white cursor-pointer" onclick="lockDevice()"></div>
+            <div class="w-3 h-3 rounded-full border-2 border-white cursor-pointer" onclick="toggleView('home')"></div>
             <div class="w-3 h-3 border-2 border-white cursor-pointer" onclick="enterPowerSave()"></div>
         </footer>
     </div>
 
-    <!-- Toast Notifier -->
     <div id="toast" class="notification-toast">Message</div>
 
     <script>
         let terminalState = {
-            user: 'Rohan',
-            pin: '',
-            currentPinInput: '',
-            theme: 'blue',
-            themeColor: '#1a73e8',
-            themeGradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            inactivityTimer: null,
-            isLocked: false
+            user: 'Rohan', pin: '', currentPinInput: '',
+            theme: 'blue', themeColor: '#1a73e8', themeGradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            inactivityTimer: null, timeoutDuration: 20000, currentView: 'home', isLocked: false
         };
 
-        // --- INACTIVITY TIMER ---
         function resetInactivityTimer() {
-            // Don't auto-power save if we are already in power save mode or on setup screens
-            const powerSaveActive = document.getElementById('power-save-overlay').classList.contains('active');
-            const setupScreen = !document.getElementById('screen-main').classList.contains('active-screen') && 
-                                !document.getElementById('screen-lock').classList.contains('active-screen');
-
-            if (powerSaveActive || setupScreen) return;
-
+            if (terminalState.timeoutDuration === 0) { clearTimeout(terminalState.inactivityTimer); return; }
+            const psActive = document.getElementById('power-save-overlay').classList.contains('active');
+            const isSetup = !document.getElementById('screen-main').classList.contains('active-screen') && !document.getElementById('screen-lock').classList.contains('active-screen');
+            if (psActive || isSetup) return;
             clearTimeout(terminalState.inactivityTimer);
-            terminalState.inactivityTimer = setTimeout(() => {
-                enterPowerSave();
-            }, 20000); // 20 Seconds
+            terminalState.inactivityTimer = setTimeout(() => { enterPowerSave(); }, terminalState.timeoutDuration);
         }
 
-        // Theme Selection
+        function updateTimeoutPreference() {
+            const val = parseInt(document.getElementById('timeout-selector').value);
+            terminalState.timeoutDuration = val;
+            showToast(`Timeout set to ${val === 0 ? 'Never' : val/1000 + 's'}`);
+            resetInactivityTimer();
+        }
+
+        function reloadCurrentApp() {
+            const views = { 'management': 'sheet-iframe', 'pizza-server': 'pizza-server-iframe' };
+            const frameId = views[terminalState.currentView];
+            if (frameId && document.getElementById(frameId)) { 
+                document.getElementById(frameId).src = document.getElementById(frameId).src; 
+                showToast("Reloading content..."); 
+            }
+        }
+
         function selectTheme(id, color, gradient) {
             terminalState.theme = id;
             terminalState.themeColor = color;
             terminalState.themeGradient = gradient;
-            
             document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('selected'));
-            document.getElementById(`theme-${id}`).classList.add('selected');
-            
+            document.getElementById(`theme-${id}`)?.classList.add('selected');
             document.documentElement.style.setProperty('--theme-color', color);
             document.documentElement.style.setProperty('--theme-bg', gradient);
         }
 
-        // Navigation
         function navTo(from, to) {
             document.getElementById(from).classList.remove('active-screen');
             document.getElementById(to).classList.add('active-screen');
         }
 
-        // Setup Logic
         function completeSetup() {
             const nameInput = document.getElementById('setup-username').value;
             const pinInput = document.getElementById('setup-pin').value;
-            
-            if(!nameInput || pinInput.length < 4) {
-                showToast("Please enter a name and a 4-digit PIN");
-                return;
-            }
-
+            if(!nameInput || pinInput.length < 4) { showToast("Missing info"); return; }
             terminalState.user = nameInput;
             terminalState.pin = pinInput;
             
-            document.getElementById('lock-user-name').innerText = terminalState.user;
-            document.getElementById('settings-user-name').innerText = terminalState.user;
+            // Fixed: Null-safe update for user display elements
+            const lockName = document.getElementById('lock-user-name');
+            if (lockName) lockName.innerText = nameInput;
             
-            document.querySelectorAll('.theme-bg-target').forEach(el => el.style.background = terminalState.themeColor);
-
+            const settingsName = document.getElementById('settings-user-name');
+            if (settingsName) settingsName.innerText = nameInput;
+            
             lockDevice();
         }
 
-        // Power Save Logic
         function enterPowerSave() {
             updateTime();
             document.getElementById('power-save-overlay').classList.add('active');
@@ -430,13 +437,17 @@
             const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
             const dateStr = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
             
-            if(document.getElementById('power-save-time')) document.getElementById('power-save-time').innerText = timeStr;
-            if(document.getElementById('lock-time')) document.getElementById('lock-time').innerText = timeStr;
-            if(document.getElementById('lock-date')) document.getElementById('lock-date').innerText = dateStr;
+            ['power-save-time', 'lock-time', 'home-time'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.innerText = timeStr;
+            });
+            ['power-save-date', 'lock-date', 'home-date'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.innerText = dateStr;
+            });
         }
         setInterval(updateTime, 10000);
 
-        // Lock Screen Logic
         function lockDevice() {
             terminalState.currentPinInput = '';
             terminalState.isLocked = true;
@@ -451,24 +462,18 @@
             if (terminalState.currentPinInput.length < 4) {
                 terminalState.currentPinInput += num;
                 updatePinDots();
-                
-                if (terminalState.currentPinInput.length === 4) {
-                    setTimeout(validatePin, 200);
-                }
+                if (terminalState.currentPinInput.length === 4) setTimeout(validatePin, 200);
             }
         }
 
-        function clearPin() {
-            terminalState.currentPinInput = '';
-            updatePinDots();
-        }
-
+        function clearPin() { terminalState.currentPinInput = ''; updatePinDots(); }
+        
         function updatePinDots() {
-            const dots = document.getElementById('pin-display').children;
-            const count = terminalState.currentPinInput.length;
+            const container = document.getElementById('pin-display');
+            if (!container) return;
+            const dots = container.children;
             for (let i = 0; i < 4; i++) {
-                dots[i].classList.toggle('bg-white', i < count);
-                dots[i].classList.toggle('border-white', i < count);
+                if (dots[i]) dots[i].classList.toggle('bg-white', i < terminalState.currentPinInput.length);
             }
         }
 
@@ -477,44 +482,38 @@
                 terminalState.isLocked = false;
                 document.getElementById('screen-lock').classList.remove('active-screen');
                 document.getElementById('screen-main').classList.add('active-screen');
-                showToast(`Welcome back, ${terminalState.user}`);
-                resetInactivityTimer(); // Start the timer when unlocked
-            } else {
-                showToast("Incorrect PIN");
-                clearPin();
-            }
+                showToast(`Unlocked`);
+                resetInactivityTimer();
+            } else { showToast("Wrong PIN"); clearPin(); }
         }
 
-        // Settings & View
         function toggleView(view) {
+            terminalState.currentView = view;
             document.querySelectorAll('.view-pane').forEach(v => v.classList.remove('view-active'));
-            document.getElementById(`view-${view}`).classList.add('view-active');
+            const targetView = document.getElementById(`view-${view}`);
+            if (targetView) targetView.classList.add('view-active');
             
-            const titles = {
-                'management': 'Management',
-                'settings': 'Settings',
-                'pizza-server': 'Pizza Server'
-            };
-            document.getElementById('app-title').innerText = titles[view] || 'Terminal';
+            const header = document.getElementById('app-header');
+            const titleEl = document.getElementById('app-title');
+            const titles = { 'management': 'Bookings', 'settings': 'Settings', 'pizza-server': 'Pizza App', 'home': 'Home' };
+            
+            if (titleEl) titleEl.innerText = titles[view] || 'Home';
+            if (header) header.style.display = (view === 'home') ? 'none' : 'flex';
+            
+            const reloadBtn = document.getElementById('header-reload-btn');
+            if (reloadBtn) reloadBtn.style.display = (view === 'management' || view === 'pizza-server') ? 'block' : 'none';
+            
             resetInactivityTimer();
         }
 
         function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.innerText = msg;
-            toast.classList.add('toast-active');
-            setTimeout(() => toast.classList.remove('toast-active'), 3000);
+            const t = document.getElementById('toast');
+            if (!t) return;
+            t.innerText = msg; t.classList.add('toast-active');
+            setTimeout(() => t.classList.remove('toast-active'), 3000);
         }
-
-        // Virtual Server Bridge Listener
-        const serverChannel = new BroadcastChannel('rohan_pizza_server');
-        serverChannel.onmessage = (event) => {
-            if (event.data.type === 'NEW_BOOKING') {
-                showToast(`🔔 New Booking: ${event.data.payload.name}`);
-            }
-        };
-
-        updateTime();
+        
+        window.onload = updateTime;
     </script>
 </body>
 </html>
