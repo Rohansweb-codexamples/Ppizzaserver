@@ -1,1 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perfect Pizza | Highland Cow Edition</title>
 
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+font-family:Poppins,sans-serif;
+background:#f7f3eb;
+color:#333;
+}
+
+nav{
+position:sticky;
+top:0;
+z-index:1000;
+background:white;
+box-shadow:0 2px 10px rgba(0,0,0,.1);
+padding:15px 5%;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.logo{
+font-family:Cinzel,serif;
+font-size:30px;
+font-weight:700;
+color:#6d2c1b;
+}
+
+nav ul{
+display:flex;
+gap:30px;
+list-style:none;
+}
+
+nav a{
+text-decoration:none;
+color:#333;
+font-weight:600;
+}
+
+nav a:hover{
+color:#8b4513;
+}
+
+.hero{
+height:90vh;
+background:
+linear-gradient(rgba(0,0,0,.45),rgba(0,0,0,.45)),
+url('https://rohansweb-codexamples.github.io/Ppizzaserver/HCV/ChatGPT%20Image%20Jul%2020,%202026,%2004_52_57%20PM.png');
+background-size:cover;
+background-position:center;
+display:flex;
+justify-content:center;
+align-items:center;
+text-align:center;
+color:white;
+}
+
+.hero-content{
+max-width:900px;
+padding:20px;
+}
+
+.hero h1{
+font-family:Cinzel,serif;
+font-size:5rem;
+margin-bottom:20px;
+}
+
+.hero p{
+font-size:1.4rem;
+margin-bottom:30px;
+}
+
+.btn{
+display:inline-block;
+padding:15px 35px;
+background:#8b4513;
+color:white;
+text-decoration:none;
+border-radius:40px;
+font-weight:600;
+transition:.3s;
+}
+
+.btn:hover{
+background:#6d2c1b;
+}
+
+section{
+padding:80px 5%;
+}
+
+.section-title{
+text-align:center;
+font-family:Cinzel,serif;
+font-size:3rem;
+margin-bottom:50px;
+color:#6d2c1b;
+}
+
+.menu-image{
+max-width:1400px;
+margin:auto;
+}
+
+.menu-image img{
+width:100%;
+border-radius:20px;
+box-shadow:0 10px 30px rgba(0,0,0,.2);
+}
+
+.about{
+max-width:1000px;
+margin:auto;
+text-align:center;
+font-size:1.1rem;
+line-height:1.8;
+}
+
+.booking{
+background:white;
+}
+
+.booking iframe{
+width:100%;
+height:1200px;
+border:none;
+border-radius:20px;
+box-shadow:0 10px 30px rgba(0,0,0,.15);
+}
+
+footer{
+background:#2b1d14;
+color:white;
+text-align:center;
+padding:40px;
+}
+
+footer h3{
+font-family:Cinzel,serif;
+margin-bottom:15px;
+}
+
+@media(max-width:768px){
+
+.hero h1{
+font-size:3rem;
+}
+
+nav{
+flex-direction:column;
+gap:15px;
+}
+
+nav ul{
+flex-wrap:wrap;
+justify-content:center;
+}
+
+.booking iframe{
+height:1400px;
+}
+
+}
+
+</style>
+</head>
+<body>
+
+<nav>
+
+<div class="logo">
+PERFECT PIZZA
+</div>
+
+<ul>
+<li><a href="#home">Home</a></li>
+<li><a href="#menu">Menu</a></li>
+<li><a href="#book">Book a Table</a></li>
+</ul>
+
+</nav>
+
+<section class="hero" id="home">
+
+<div class="hero-content">
+
+<h1>Perfect Pizza</h1>
+
+<p>
+Highland Cow Inspired Dining • Wood Fired Pizzas • Fresh Ingredients
+</p>
+
+<a href="#book" class="btn">
+Book a Table
+</a>
+
+</div>
+
+</section>
+
+<section>
+
+<h2 class="section-title">
+Welcome
+</h2>
+
+<div class="about">
+
+<p>
+Welcome to Perfect Pizza. Enjoy handcrafted pizzas made using the finest ingredients in a warm Highland Cow themed restaurant. Our menu combines classic favourites with signature creations prepared fresh every day.
+</p>
+
+</div>
+
+</section>
+
+<section id="menu">
+
+<h2 class="section-title">
+Our Menu
+</h2>
+
+<div class="menu-image">
+
+<img src="https://rohansweb-codexamples.github.io/Ppizzaserver/HCV/ChatGPT%20Image%20Jul%2018,%202026,%2004_32_23%20PM.png" alt="Perfect Pizza Menu">
+
+</div>
+
+</section>
+
+<section class="booking" id="book">
+
+<h2 class="section-title">
+Book a Table
+</h2>
+
+<iframe
+src="https://docs.google.com/forms/d/e/1FAIpQLSfu7XWcFy-sab1d9tDnhUbfRhrgph3OjqzTWcrVkJRqd7dsNw/viewform?embedded=true">
+Loading...
+</iframe>
+
+</section>
+
+<footer>
+
+<h3>Perfect Pizza</h3>
+
+<p>
+Handcrafted Perfection • Highland Cow Edition
+</p>
+
+</footer>
+
+</body>
+</html>
